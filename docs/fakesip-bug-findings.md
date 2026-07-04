@@ -13,6 +13,7 @@ assistant sessions.
   `libnetfilter-queue-dev`, `libnfnetlink-dev`, and `libmnl-dev`.
 - Runtime smoke: `build/fakesip -f -a -6` and `build/fakesip -a -6`
   both start and exit cleanly when interrupted by `timeout`.
+- OpenWrt runtime host: OpenWrt 25.12.5, Linux 6.12.94, hostname `cache1`.
 
 ## Confirmed Bugs
 
@@ -123,6 +124,111 @@ The unknown ethertype log message contains `%04x` but does not pass
 `ethertype`.
 
 Impact: undefined behavior if the unknown-ethertype branch is reached.
+
+## OpenWrt Runtime Findings
+
+### Multi-Instance OpenWrt Setup Starves Later Queues
+
+The OpenWrt service was running three FakeSIP instances:
+
+```sh
+/usr/bin/fakesip -i pppoe-wan2  -1 -4 -n 513 -w /tmp/fakesip-wan2.log
+/usr/bin/fakesip -i pppoe-wancm -1 -4 -n 514 -w /tmp/fakesip-wancm.log
+/usr/bin/fakesip -i pppoe-wanct -1 -4 -n 515 -w /tmp/fakesip-wanct.log
+```
+
+All instances install rules into the same `table ip fakesip` and the same
+`fs_rules` chain. In the observed ruleset, all WAN interface jumps eventually
+hit one shared chain like this:
+
+```nft
+meta mark & 0x00010000 == 0x00010000 return
+meta l4proto udp ct packets 1-5 queue flags bypass to 513
+meta mark & 0x00010000 == 0x00010000 return
+meta l4proto udp ct packets 1-5 queue flags bypass to 515
+meta mark & 0x00010000 == 0x00010000 return
+meta l4proto udp ct packets 1-5 queue flags bypass to 514
+```
+
+The first matching queue rule consumes the packet, so the later queue rules are
+effectively unreachable for matching UDP traffic. This matches the logs: the
+first queue's log kept growing while the other logs were stale or much less
+active.
+
+Operational impact: starting one FakeSIP process per WAN with different queue
+numbers does not isolate traffic by interface. A safer deployment shape is one
+process with all WAN interfaces on one queue, or a code change that creates
+per-instance/per-interface chains instead of sharing a single `fs_rules` chain.
+
+### `-1` Explains The `UDP(~)` Skip Lines
+
+The OpenWrt service starts each instance with `-1`, which sets
+`g_ctx.outbound = 1` but leaves `g_ctx.inbound = 0`. In `src/rawsend.c`, the
+`PACKET_OUTGOING` path does this:
+
+```c
+if (!g_ctx.inbound) {
+    E_INFO("%s:%u <===UDP(~)=== %s:%u", ...);
+    return NF_ACCEPT;
+}
+```
+
+Therefore the repeated `UDP(~)` log lines are expected for packets that enter
+that branch while the instance is running with only `-1`.
+
+### OpenWrt Single-Instance Test
+
+On 2026-07-04, a temporary OpenWrt test was run by stopping the service,
+starting one FakeSIP process for all three WAN interfaces, sending a few UDP
+probes with `socat`, collecting logs, and restoring the original service.
+
+Temporary command:
+
+```sh
+/usr/bin/fakesip -i pppoe-wan2 -i pppoe-wancm -i pppoe-wanct \
+  -4 -n 513 -w /tmp/fakesip-single-test2.log
+```
+
+The temporary nft ruleset had one queue rule only:
+
+```nft
+meta mark & 0x00010000 == 0x00010000 return
+meta l4proto udp ct packets 1-5 queue flags bypass to 513
+```
+
+Observed result:
+
+```text
+FAKE count: 8
+UDP skip count: 0
+LOCAL skip count: 0
+```
+
+A prior natural-traffic run with the same single-instance shape produced:
+
+```text
+FAKE count: 109
+UDP skip count: 0
+LOCAL skip count: 0
+```
+
+The original three-instance service was restored after the test.
+
+Important caveat: this operational workaround makes FakeSIP reach the fake-send
+branches, but it does not fix the source-level UDP length bugs documented
+above. Those malformed generated packets can still prevent effective
+camouflage until the packet builders are fixed.
+
+Suggested OpenWrt service shape for further testing:
+
+```sh
+procd_set_param command "$PROG" \
+  -i pppoe-wan2 -i pppoe-wancm -i pppoe-wanct \
+  -4 -n 513 -w /tmp/fakesip-allwan.log
+```
+
+This suggestion was tested temporarily only; it was not left installed on the
+router.
 
 ## Downgraded Or Unconfirmed Findings
 
