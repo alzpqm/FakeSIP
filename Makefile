@@ -48,10 +48,12 @@ $(BUILDDIR)/%.d: $(SRCDIR)/%.c | $(BUILDDIR)
 $(BUILDDIR)/%.o: $(SRCDIR)/%.c | $(BUILDDIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(FAKESIP): $(OBJS) $(MKS)
+$(FAKESIP): $(OBJS) $(MKS) | $(BUILDDIR)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 ifneq ($(DEBUG), 1)
+ifneq ($(STRIP),)
 	$(STRIP) $@
+endif
 endif
 
 install: all

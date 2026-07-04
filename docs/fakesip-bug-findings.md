@@ -14,6 +14,29 @@ assistant sessions.
 - Runtime smoke: `build/fakesip -f -a -6` and `build/fakesip -a -6`
   both start and exit cleanly when interrupted by `timeout`.
 - OpenWrt runtime host: OpenWrt 25.12.5, Linux 6.12.94, hostname `cache1`.
+- OpenWrt SDK: OpenWrt 25.12.5 x86/64 SDK, GCC 14.3.0, musl.
+
+## Current Branch Fix Status
+
+This branch now contains code fixes for:
+
+- IPv4 and IPv6 generated UDP length fields
+- outbound original-packet duplication
+- IPv6 iptables fallback using IPv4 tooling
+- source-info cache population and circular lookup order
+- missing unknown-ethertype format argument
+- OpenWrt SDK Makefile issues around `build/` creation and empty `STRIP`
+
+Validation performed through 2026-07-05 Asia/Taipei:
+
+- Debian `make DEBUG=1` succeeded with GCC 14.2.
+- A Debian network-namespace regression using a public-test subnet delivered
+  exactly one fake SIP payload and exactly one original UDP payload:
+  `ORIG_COUNT=1 FAKE_COUNT=1`.
+- OpenWrt SDK x86_64/musl package compile succeeded, producing
+  `fakesip-0.9.1.1-r1.apk` and a `0.9.1-codex` test binary.
+- The OpenWrt test binary was copied to `/tmp/fakesip-codex`, run temporarily,
+  and the original router service was restored afterward.
 
 ## Confirmed Bugs
 
@@ -125,6 +148,40 @@ The unknown ethertype log message contains `%04x` but does not pass
 
 Impact: undefined behavior if the unknown-ethertype branch is reached.
 
+### Makefile Link Target Does Not Require Build Directory
+
+File: `Makefile`
+
+The link target wrote `build/fakesip` without an order-only dependency on
+`build/`. OpenWrt SDK parallel/package builds can clean and recreate the build
+tree before invoking the sub-make, so the final link can fail if the target
+directory is not guaranteed to exist.
+
+Impact: OpenWrt SDK builds can fail at final link time with
+`build/fakesip: No such file or directory`.
+
+### Empty STRIP Executes The Target Binary
+
+File: `Makefile`
+
+When OpenWrt SDK invoked the sub-build with `STRIP=""`, the recipe line:
+
+```make
+$(STRIP) $@
+```
+
+expanded to just:
+
+```sh
+build/fakesip
+```
+
+That tries to execute the newly cross-compiled musl binary on the build host.
+
+Impact: cross-builds can fail after a successful link. The observed failure was
+`build/fakesip: No such file or directory`, caused by Debian attempting to run
+an OpenWrt/musl executable.
+
 ## OpenWrt Runtime Findings
 
 ### Multi-Instance OpenWrt Setup Starves Later Queues
@@ -229,6 +286,52 @@ procd_set_param command "$PROG" \
 
 This suggestion was tested temporarily only; it was not left installed on the
 router.
+
+### OpenWrt Fixed-Binary Test
+
+After applying the source fixes in this branch, an OpenWrt x86_64/musl binary
+was built with the OpenWrt 25.12.5 SDK and copied to the router as:
+
+```sh
+/tmp/fakesip-codex
+```
+
+The binary identified itself as:
+
+```text
+FakeSIP version 0.9.1-codex
+```
+
+It was run temporarily with:
+
+```sh
+/tmp/fakesip-codex -i pppoe-wan2 -i pppoe-wancm -i pppoe-wanct \
+  -1 -4 -n 513 -r 1 -w /tmp/fakesip-codex-test.log
+```
+
+DNS queries were sent from the router to `8.8.8.8`, `1.1.1.1`, `223.5.5.5`,
+and `119.29.29.29`; all `nslookup example.com <server>` commands returned
+successfully.
+
+Observed log counts:
+
+```text
+FAKE_COUNT=35
+UDP_SKIP_COUNT=32
+LOCAL_SKIP_COUNT=0
+```
+
+Example fixed-binary log lines:
+
+```text
+119.29.29.29:53 ===UDP===> 10.47.15.242:43510
+119.29.29.29:53 <===FAKE(*)=== 10.47.15.242:43510
+```
+
+The `UDP(~)` lines are still expected for packets that enter the skipped
+direction while running with `-1`; the important result is that the fixed binary
+entered the fake-send path and produced `FAKE(*)` records during real OpenWrt
+traffic. The original three-process service was restored after the test.
 
 ## Downgraded Or Unconfirmed Findings
 

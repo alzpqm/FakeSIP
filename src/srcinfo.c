@@ -82,6 +82,8 @@ int fs_srcinfo_setup(void)
 void fs_srcinfo_cleanup(void)
 {
     free(srci);
+    srci = NULL;
+    srci_end = 0;
 }
 
 
@@ -116,7 +118,7 @@ int fs_srcinfo_get(struct sockaddr *addr, uint8_t *ttl, uint8_t hwaddr[8])
     struct srcinfo *info;
 
     for (i = 0; i < CAPACITY; i++) {
-        info = &srci[(srci_end - i - 1) % CAPACITY];
+        info = &srci[(srci_end + CAPACITY - i - 1) % CAPACITY];
         if (!info->initialized) {
             return 1;
         }
