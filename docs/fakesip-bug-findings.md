@@ -333,6 +333,68 @@ direction while running with `-1`; the important result is that the fixed binary
 entered the fake-send path and produced `FAKE(*)` records during real OpenWrt
 traffic. The original three-process service was restored after the test.
 
+### OpenWrt Active Deployment
+
+On 2026-07-05 Asia/Taipei, the fixed binary was deployed on the OpenWrt router
+for active use.
+
+Router-side backup:
+
+```text
+/root/fakesip-backup-20260704-212905
+/root/fakesip-backup-20260704-212905.tgz
+```
+
+Mac-side backup:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-backup-20260704-212905.tgz
+```
+
+Backup tarball SHA-256:
+
+```text
+6631bb42efb0b9db3eca83d2eaff2f0abc330a0493d02d94232489793353ad2f
+```
+
+Installed binary:
+
+```text
+/usr/bin/fakesip
+sha256: 296139f463e668d016208eb551a23138c8e30d926b7bed017903a90d241ea8b1
+```
+
+The active init script now starts one process for all three WAN interfaces:
+
+```sh
+/usr/bin/fakesip -i pppoe-wan2 -i pppoe-wancm -i pppoe-wanct \
+  -1 -4 -n 513 -w /tmp/fakesip-allwan.log
+```
+
+The active nft ruleset was verified to contain a single queue rule:
+
+```nft
+meta l4proto udp ct packets 1-5 queue flags bypass to 513
+```
+
+Post-deployment verification:
+
+```text
+NSLOOKUP_8.8.8.8_RC=0
+NSLOOKUP_1.1.1.1_RC=0
+NSLOOKUP_223.5.5.5_RC=0
+NSLOOKUP_119.29.29.29_RC=0
+FAKE_COUNT=44
+UDP_SKIP_COUNT=89
+LOCAL_SKIP_COUNT=0
+```
+
+Rollback command on the router:
+
+```sh
+/root/fakesip-backup-20260704-212905/rollback.sh
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`
