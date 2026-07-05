@@ -155,8 +155,6 @@ int fs_nft6_setup(void)
         return -1;
     }
 
-    fs_execute_command(nft_cmd, 0, nft_conf_buff);
-
     res = nft6_iface_setup();
     if (res < 0) {
         E(T(nft6_iface_setup));

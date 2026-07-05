@@ -38,6 +38,11 @@ int fs_execute_command(char **argv, int silent, char *input)
     ssize_t n;
     pid_t pid;
 
+    if (!argv || !argv[0]) {
+        E("ERROR: fs_execute_command(): %s", "invalid argv");
+        return -1;
+    }
+
     if (input) {
         res = pipe(pipefd);
         if (res < 0) {
@@ -111,6 +116,9 @@ int fs_execute_command(char **argv, int silent, char *input)
             n = write(pipefd[1], input + written, input_len - written);
             if (n < 0) {
                 E("ERROR: write(): %s", strerror(errno));
+                break;
+            } else if (n == 0) {
+                E("ERROR: write(): %s", "short write");
                 break;
             }
         }

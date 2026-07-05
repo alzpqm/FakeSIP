@@ -26,10 +26,16 @@ This branch now contains code fixes for:
 - source-info cache population and circular lookup order
 - missing unknown-ethertype format argument
 - OpenWrt SDK Makefile issues around `build/` creation and empty `STRIP`
+- redundant IPv6 nft ruleset application
+- defensive cleanup and argument guards in payload/process setup paths
 
 Validation performed through 2026-07-05 Asia/Taipei:
 
 - Debian `make DEBUG=1` succeeded with GCC 14.2.
+- Debian `make DEBUG=1 CFLAGS="-fanalyzer"` succeeded with no remaining
+  analyzer warnings after the defensive guard fixes.
+- Runtime smoke tests for `build/fakesip -f -a -4` and `build/fakesip -a -6`
+  started cleanly and exited normally when interrupted by `timeout`.
 - A Debian network-namespace regression using a public-test subnet delivered
   exactly one fake SIP payload and exactly one original UDP payload:
   `ORIG_COUNT=1 FAKE_COUNT=1`.
@@ -395,6 +401,47 @@ Rollback command on the router:
 /root/fakesip-backup-20260704-212905/rollback.sh
 ```
 
+### OpenWrt QUIC Bypass For Slow Image Loads
+
+After active deployment, web images were reported to load slowly. The router log
+showed FakeSIP was processing UDP/443 traffic:
+
+```text
+UDP443_LINES=2191
+```
+
+Recent samples included `FAKE(*)` records for remote port `443`, which is
+consistent with HTTP/3/QUIC being queued and spoofed. That can delay image and
+media loads while browsers or CDNs retransmit or fall back to TCP.
+
+The live nft ruleset was updated to bypass UDP/443 before the queue rule:
+
+```nft
+udp dport 443 return
+udp sport 443 return
+meta mark & 0x00010000 == 0x00010000 return
+meta l4proto udp ct packets 1-5 queue flags bypass to 513
+```
+
+The init script was also updated to reinsert those two bypass rules after
+FakeSIP creates its nft table on service start.
+
+Post-change 30-second sample:
+
+```text
+SAMPLE_LINES=56552..56731
+NEW_443_LINES=0
+NEW_443_FAKE_LINES=0
+NEW_FAKE_LINES=78
+```
+
+Updated Mac-side backup including the pre-QUIC-bypass init script:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-backup-20260704-212905-quic-bypass.tgz
+sha256: bc12170388d6cb9b5fb0d394c58580a7e0f82ebd900b39d56d3679b123d8a987
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`
@@ -405,14 +452,6 @@ This originally looked suspicious because ICMPv6 is normally written with
 `icmpv6`. However, Debian 13's `nft -c` accepted the current rule, and
 `fakesip -a -6` started and cleaned up successfully. Treat this as a
 compatibility/style concern rather than a confirmed bug.
-
-### Duplicate nft Ruleset Apply
-
-File: `src/ipv6nft.c`
-
-`fs_nft6_setup()` calls `fs_execute_command(nft_cmd, 0, nft_conf_buff)` twice.
-On Debian 13 this did not break startup, but the second call is redundant and
-its result is ignored.
 
 ## Reproduction Notes
 

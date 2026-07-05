@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
     exitcode = EXIT_FAILURE;
 
-    if (!argc || !argv[0]) {
+    if (argc <= 0 || !argv || !argv[0]) {
         print_usage(PROGNAME);
         return EXIT_FAILURE;
     } else if (argc == 1) {

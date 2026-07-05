@@ -246,6 +246,7 @@ void fs_payload_cleanup(void)
         }
         node = next_node;
     }
+    current_node = NULL;
 }
 
 
