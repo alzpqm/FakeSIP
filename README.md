@@ -11,6 +11,15 @@ Disguise your UDP traffic as SIP protocol to evade DPI detection, using Netfilte
 fakesip -i eth0
 ```
 
+## OpenWrt
+
+OpenWrt packaging is available under [`openwrt/`](openwrt/). It includes:
+
+- `fakesip`: the binary package, UCI config, and procd service
+- `luci-app-fakesip`: a LuCI page under **Services > FakeSIP**
+
+Build and install steps are documented in [`openwrt/README.md`](openwrt/README.md).
+
 
 ## Usage
 
