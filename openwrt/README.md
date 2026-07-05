@@ -82,6 +82,8 @@ uci set fakesip.main.ipv4='1'
 uci set fakesip.main.ipv6='1'
 uci set fakesip.main.outbound='1'
 uci set fakesip.main.inbound='0'
+uci set fakesip.main.silent='1'
+uci -q delete fakesip.main.log_file
 uci commit fakesip
 
 /etc/init.d/fakesip enable
@@ -119,6 +121,10 @@ nft list table ip fakesip
 
 The service should have one queue rule for the configured instance, usually
 queue `513`.
+
+The package enables silent mode by default for long-running routers. Set
+`fakesip.main.log_file` only while debugging; high-volume packet logs can fill
+`/tmp` quickly on busy links.
 
 FakeSIP also suppresses ICMP/ICMPv6 time-exceeded replies used by hop-limit
 probing. The packaged rules scope this suppression to the configured FakeSIP

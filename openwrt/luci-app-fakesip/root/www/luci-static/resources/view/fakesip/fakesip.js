@@ -138,10 +138,11 @@ return view.extend({
 		o.default = '0';
 
 		o = s.taboption('advanced', form.Flag, 'silent', _('Silent mode'));
-		o.default = '0';
+		o.default = '1';
 
 		o = s.taboption('advanced', form.Value, 'log_file', _('Log file'));
 		o.placeholder = '/tmp/fakesip.log';
+		o.rmempty = true;
 
 		o = s.taboption('payload', form.DynamicList, 'sip_uri', _('SIP URI'));
 		o.placeholder = 'sip:10086@example.com';
