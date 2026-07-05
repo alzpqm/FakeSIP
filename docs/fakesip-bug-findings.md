@@ -401,7 +401,7 @@ Rollback command on the router:
 /root/fakesip-backup-20260704-212905/rollback.sh
 ```
 
-### OpenWrt QUIC Bypass For Slow Image Loads
+### OpenWrt UDP/443 Bypass Test And Global Mode Revert
 
 After active deployment, web images were reported to load slowly. The router log
 showed FakeSIP was processing UDP/443 traffic:
@@ -414,7 +414,8 @@ Recent samples included `FAKE(*)` records for remote port `443`, which is
 consistent with HTTP/3/QUIC being queued and spoofed. That can delay image and
 media loads while browsers or CDNs retransmit or fall back to TCP.
 
-The live nft ruleset was updated to bypass UDP/443 before the queue rule:
+A temporary live nft bypass was tested by inserting UDP/443 returns before the
+queue rule:
 
 ```nft
 udp dport 443 return
@@ -422,9 +423,6 @@ udp sport 443 return
 meta mark & 0x00010000 == 0x00010000 return
 meta l4proto udp ct packets 1-5 queue flags bypass to 513
 ```
-
-The init script was also updated to reinsert those two bypass rules after
-FakeSIP creates its nft table on service start.
 
 Post-change 30-second sample:
 
@@ -435,11 +433,30 @@ NEW_443_FAKE_LINES=0
 NEW_FAKE_LINES=78
 ```
 
-Updated Mac-side backup including the pre-QUIC-bypass init script:
+This confirmed the cause, but the bypass was removed afterward because the
+deployment goal is global UDP camouflage. The current active router ruleset has
+no UDP/443 exception and keeps only the queue rule:
+
+```nft
+meta mark & 0x00010000 == 0x00010000 return
+meta l4proto udp ct packets 1-5 queue flags bypass to 513
+```
+
+The active init script was also reverted to the no-bypass single-process
+configuration.
+
+Mac-side backup from the temporary bypass test:
 
 ```text
 /Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-backup-20260704-212905-quic-bypass.tgz
 sha256: bc12170388d6cb9b5fb0d394c58580a7e0f82ebd900b39d56d3679b123d8a987
+```
+
+Mac-side backup after reverting to global no-bypass mode:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-backup-20260704-212905-global-no-bypass.tgz
+sha256: d707d7d985dfce263262c70a7ca761a6c9cad0febb1fccee4402fc4b3755d331
 ```
 
 ## Downgraded Or Unconfirmed Findings
