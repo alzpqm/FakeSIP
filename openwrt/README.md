@@ -110,6 +110,11 @@ uci commit fakesip
 /etc/init.d/fakesip restart
 ```
 
+If both `network` and `interface` are present, the init script resolves and
+deduplicates them before starting FakeSIP. Values in `network` may be logical
+OpenWrt network names such as `wan`; Linux devices such as `pppoe-wan` are also
+accepted for robustness, but keeping device names under `interface` is clearer.
+
 ## Check It
 
 ```sh

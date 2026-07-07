@@ -83,11 +83,11 @@ return view.extend({
 		o = s.taboption('basic', form.Flag, 'enabled', _('Enabled'));
 		o.default = '0';
 
-		o = s.taboption('basic', form.DynamicList, 'network', _('OpenWrt networks'));
+		o = s.taboption('basic', form.DynamicList, 'network', _('OpenWrt network names'));
 		o.placeholder = 'wan';
 		o.rmempty = true;
 
-		o = s.taboption('basic', form.DynamicList, 'interface', _('Linux interfaces'));
+		o = s.taboption('basic', form.DynamicList, 'interface', _('Linux device names'));
 		o.placeholder = 'pppoe-wan';
 		o.rmempty = true;
 

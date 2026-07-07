@@ -13,9 +13,10 @@ append_bool_arg() {
 	local section="$1"
 	local option="$2"
 	local flag="$3"
+	local default="${4:-0}"
 	local value
 
-	config_get_bool value "$section" "$option" 0
+	config_get_bool value "$section" "$option" "$default"
 	[ "$value" -eq 1 ] && procd_append_param command "$flag"
 }
 
@@ -47,16 +48,33 @@ append_list_arg() {
 	[ -n "$value" ] && procd_append_param command "$flag" "$value"
 }
 
+append_interface_arg() {
+	local device="$1"
+
+	[ -n "$device" ] || return 0
+
+	case " $FS_IFACES_ADDED " in
+		*" $device "*) return 0 ;;
+	esac
+
+	FS_IFACES_ADDED="$FS_IFACES_ADDED $device"
+	procd_append_param command -i "$device"
+}
+
 append_network_arg() {
 	local network="$1"
 	local device
 
 	network_get_device device "$network" || {
-		logger -t fakesip "network '$network' has no active device"
+		if [ -d "/sys/class/net/$network" ]; then
+			append_interface_arg "$network"
+		else
+			logger -t fakesip "network '$network' has no active device"
+		fi
 		return 0
 	}
 
-	[ -n "$device" ] && procd_append_param command -i "$device"
+	append_interface_arg "$device"
 }
 
 has_list_values() {
@@ -71,6 +89,7 @@ has_list_values() {
 start_instance() {
 	local section="$1"
 	local enabled all_interfaces log_file
+	FS_IFACES_ADDED=
 
 	config_get_bool enabled "$section" enabled 0
 	[ "$enabled" -eq 1 ] || return 0
@@ -86,14 +105,14 @@ start_instance() {
 	procd_open_instance "$section"
 	procd_set_param command "$PROG"
 
-	append_bool_arg "$section" inbound -0
-	append_bool_arg "$section" outbound -1
-	append_bool_arg "$section" ipv4 -4
-	append_bool_arg "$section" ipv6 -6
+	append_bool_arg "$section" inbound -0 0
+	append_bool_arg "$section" outbound -1 1
+	append_bool_arg "$section" ipv4 -4 1
+	append_bool_arg "$section" ipv6 -6 1
 	append_bool_arg "$section" no_hop_estimate -g
 	append_bool_arg "$section" skip_firewall -f
 	append_bool_arg "$section" use_iptables -z
-	append_bool_arg "$section" silent -s
+	append_bool_arg "$section" silent -s 1
 
 	config_list_foreach "$section" sip_uri append_list_arg -u
 	config_list_foreach "$section" payload_file append_list_arg -b
@@ -109,7 +128,7 @@ start_instance() {
 		procd_append_param command -a
 	else
 		config_list_foreach "$section" network append_network_arg
-		config_list_foreach "$section" interface append_list_arg -i
+		config_list_foreach "$section" interface append_interface_arg
 	fi
 
 	config_get log_file "$section" log_file
