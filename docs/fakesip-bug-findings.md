@@ -223,6 +223,10 @@ numbers does not isolate traffic by interface. A safer deployment shape is one
 process with all WAN interfaces on one queue, or a code change that creates
 per-instance/per-interface chains instead of sharing a single `fs_rules` chain.
 
+The OpenWrt r11 package prevents this invalid shape by exposing and starting
+only the `main` UCI section. Multi-WAN deployments add all interface names to
+that single process and queue.
+
 ### `-1` Explains The `UDP(~)` Skip Lines
 
 The OpenWrt service starts each instance with `-1`, which sets

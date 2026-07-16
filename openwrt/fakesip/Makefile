@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakesip
 PKG_VERSION:=0.9.1
-PKG_RELEASE:=10
+PKG_RELEASE:=11
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -13,7 +13,7 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 else
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/alzpqm/FakeSIP.git
-PKG_SOURCE_VERSION:=ecb158255caa9857e666712bc22d1046e49369df
+PKG_SOURCE_VERSION:=66b1cadd556fa91d399bacf54bab0a87d9bde751
 PKG_MIRROR_HASH:=skip
 endif
 
@@ -23,7 +23,7 @@ define Package/fakesip
   SECTION:=net
   CATEGORY:=Network
   TITLE:=UDP SIP camouflage using Netfilter Queue
-  URL:=https://github.com/MikeWang000000/FakeSIP
+  URL:=https://github.com/alzpqm/FakeSIP
   DEPENDS:=+libnetfilter-queue +libnfnetlink +libmnl
 endef
 

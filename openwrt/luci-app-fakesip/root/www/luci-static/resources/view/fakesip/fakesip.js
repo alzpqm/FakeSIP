@@ -70,10 +70,7 @@ return view.extend({
 		m = new form.Map('fakesip', _('FakeSIP'),
 			_('Disguise UDP traffic as SIP protocol traffic using Netfilter Queue.'));
 
-		s = m.section(form.TypedSection, 'fakesip', _('Instances'));
-		s.addremove = true;
-		s.anonymous = false;
-		s.addbtntitle = _('Add instance');
+		s = m.section(form.NamedSection, 'main', 'fakesip', _('Configuration'));
 
 		s.tab('basic', _('Basic'));
 		s.tab('traffic', _('Traffic'));

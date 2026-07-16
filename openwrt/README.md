@@ -69,7 +69,7 @@ opkg install /tmp/luci-app-fakesip_*.ipk
 The default config is disabled so installation never changes traffic by
 surprise. Enable it and point it at your WAN network:
 
-In LuCI, open **Services > FakeSIP**, enable the `main` instance, set the WAN
+In LuCI, open **Services > FakeSIP**, enable the `main` configuration, set the WAN
 network or Linux interface, save/apply, then use the Start or Restart button.
 
 The same setup from SSH is:
@@ -93,6 +93,8 @@ uci commit fakesip
 For multi-WAN, add each logical network to the same instance. Running one
 FakeSIP process per WAN with separate queue numbers can make later queues
 unreachable because all instances share the same nft table and chain names.
+The package therefore exposes and starts only the `main` UCI section. Add every
+WAN network or Linux device to that one section.
 
 ```sh
 uci add_list fakesip.main.network='wan2'

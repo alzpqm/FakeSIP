@@ -142,7 +142,9 @@ start_instance() {
 
 start_service() {
 	config_load fakesip
-	config_foreach start_instance fakesip
+	# The nftables backend owns fixed table and chain names, so the package
+	# intentionally manages one process with all selected WAN interfaces.
+	start_instance main
 }
 
 add_network_trigger() {
@@ -161,7 +163,7 @@ add_instance_triggers() {
 service_triggers() {
 	procd_add_reload_trigger fakesip
 	config_load fakesip
-	config_foreach add_instance_triggers fakesip
+	add_instance_triggers main
 }
 
 reload_service() {

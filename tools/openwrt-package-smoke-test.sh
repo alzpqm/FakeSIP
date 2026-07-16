@@ -24,6 +24,14 @@ require_grep() {
     grep -Eq "$pattern" "$file" || fail "missing pattern '$pattern' in $file"
 }
 
+forbid_grep() {
+    pattern="$1"
+    file="$2"
+    if grep -Eq "$pattern" "$file"; then
+        fail "unexpected pattern '$pattern' in $file"
+    fi
+}
+
 require_file "$PKG_DIR/Makefile"
 require_file "$PKG_DIR/files/fakesip.config"
 require_file "$PKG_DIR/files/fakesip.init"
@@ -50,16 +58,20 @@ require_grep 'BuildPackage,fakesip' "$PKG_DIR/Makefile"
 require_grep 'libnetfilter-queue' "$PKG_DIR/Makefile"
 require_grep 'fakesip.config' "$PKG_DIR/Makefile"
 require_grep 'fakesip.init' "$PKG_DIR/Makefile"
+require_grep 'PKG_SOURCE_VERSION:=66b1cadd556fa91d399bacf54bab0a87d9bde751' "$PKG_DIR/Makefile"
 require_grep 'kmod-nft-queue' "$ROOT_DIR/openwrt/README.md"
 require_grep 'config fakesip' "$PKG_DIR/files/fakesip.config"
 require_grep "option ipv6 '1'" "$PKG_DIR/files/fakesip.config"
 require_grep "option silent '1'" "$PKG_DIR/files/fakesip.config"
 require_grep 'USE_PROCD=1' "$PKG_DIR/files/fakesip.init"
 require_grep 'network_get_device' "$PKG_DIR/files/fakesip.init"
+require_grep 'start_instance main' "$PKG_DIR/files/fakesip.init"
 require_grep 'BuildPackage,luci-app-fakesip' "$LUCI_DIR/Makefile"
 require_grep 'admin/services/fakesip' "$LUCI_DIR/root/usr/share/luci/menu.d/luci-app-fakesip.json"
 require_grep 'luci-app-fakesip' "$LUCI_DIR/root/usr/share/rpcd/acl.d/luci-app-fakesip.json"
 require_grep 'form.Map..fakesip' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
+require_grep "form.NamedSection, 'main', 'fakesip'" "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
+forbid_grep 'addremove = true' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
 require_grep "o.default = '1';" "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
 
 printf 'OpenWrt package smoke test passed.\n'
