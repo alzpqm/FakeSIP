@@ -29,12 +29,25 @@
 
 static int nft6_iface_setup(void)
 {
-    char nftstr[120];
+    char nftstr[160];
     size_t i;
     int res;
     char *nft_iface_cmd[] = {"nft", nftstr, NULL};
 
     if (g_ctx.alliface) {
+        res = snprintf(nftstr, sizeof(nftstr),
+                       "add rule ip6 fakesip fs_prerouting icmpv6 type "
+                       "time-exceeded counter drop");
+        if (res < 0 || (size_t) res >= sizeof(nftstr)) {
+            E("ERROR: snprintf(): %s", "failure");
+            return -1;
+        }
+        res = fs_execute_command(nft_iface_cmd, 0, NULL);
+        if (res < 0) {
+            E(T(fs_execute_command));
+            return -1;
+        }
+
         res = snprintf(nftstr, sizeof(nftstr),
                        "add rule ip6 fakesip fs_prerouting jump fs_rules");
         if (res < 0 || (size_t) res >= sizeof(nftstr)) {
@@ -63,6 +76,20 @@ static int nft6_iface_setup(void)
     }
 
     for (i = 0; g_ctx.iface[i]; i++) {
+        res = snprintf(nftstr, sizeof(nftstr),
+                       "add rule ip6 fakesip fs_prerouting iifname \"%s\" "
+                       "icmpv6 type time-exceeded counter drop",
+                       g_ctx.iface[i]);
+        if (res < 0 || (size_t) res >= sizeof(nftstr)) {
+            E("ERROR: snprintf(): %s", "failure");
+            return -1;
+        }
+        res = fs_execute_command(nft_iface_cmd, 0, NULL);
+        if (res < 0) {
+            E(T(fs_execute_command));
+            return -1;
+        }
+
         res = snprintf(nftstr, sizeof(nftstr),
                        "add rule ip6 fakesip fs_prerouting iifname \"%s\" "
                        "jump fs_rules",
@@ -105,10 +132,6 @@ int fs_nft6_setup(void)
         "    chain fs_prerouting {\n"
         "        type filter hook prerouting priority mangle - 5;\n"
         "        policy accept;\n"
-        /*
-            drop time-exceeded ICMP packets
-        */
-        "        icmp type time-exceeded counter drop;\n"
         /*
             exclude non-GUA IPv6 addresses (from source)
         */
@@ -154,8 +177,6 @@ int fs_nft6_setup(void)
         E(T(fs_execute_command));
         return -1;
     }
-
-    fs_execute_command(nft_cmd, 0, nft_conf_buff);
 
     res = nft6_iface_setup();
     if (res < 0) {

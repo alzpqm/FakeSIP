@@ -343,7 +343,6 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
     char src_ip_str[INET6_ADDRSTRLEN], dst_ip_str[INET6_ADDRSTRLEN];
     struct sockaddr_storage saddr_store, daddr_store;
     struct sockaddr *saddr, *daddr;
-    ssize_t nbytes;
 
     *modified = 0;
 
@@ -366,7 +365,7 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
             return -1;
         }
     } else {
-        E("ERROR: unknown ethertype 0x%04x");
+        E("ERROR: unknown ethertype 0x%04x", ethertype);
         return -1;
     }
 
@@ -380,6 +379,11 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
             Inbound UDP packet.
         */
         sll->sll_pkttype = 0;
+
+        res = fs_srcinfo_put(saddr, src_ttl, sll->sll_addr);
+        if (res < 0) {
+            E(T(fs_srcinfo_put));
+        }
 
         if (!g_ctx.outbound) {
             E_INFO("%s:%u ===UDP(~)===> %s:%u", src_ip_str,
@@ -458,12 +462,6 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
         }
         E_INFO("%s:%u <===FAKE(*)=== %s:%u", dst_ip_str, ntohs(udph->dest),
                src_ip_str, ntohs(udph->source));
-
-        nbytes = sendto_snat(sll, daddr, pkt_data, pkt_len);
-        if (nbytes < 0) {
-            E(T(sendto_snat));
-            return -1;
-        }
 
         E_INFO("%s:%u <===UDP=== %s:%u", dst_ip_str, ntohs(udph->dest),
                src_ip_str, ntohs(udph->source));

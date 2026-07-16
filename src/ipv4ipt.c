@@ -37,9 +37,22 @@ static int ipt4_iface_setup(void)
                                     "mangle",   "-A",        "FAKESIP_S",
                                     "-j",       "FAKESIP_R", NULL};
 
+    char *ipt_alliface_icmp_cmd[] = {"iptables",    "-w",     "-t",
+                                     "mangle",      "-A",     "FAKESIP_S",
+                                     "-p",          "icmp",   "--icmp-type",
+                                     "11",          "-j",     "DROP",
+                                     NULL};
+
     char *ipt_alliface_dst_cmd[] = {"iptables", "-w",        "-t",
                                     "mangle",   "-A",        "FAKESIP_D",
                                     "-j",       "FAKESIP_R", NULL};
+
+    char *ipt_iface_icmp_cmd[] = {"iptables",    "-w",        "-t",
+                                  "mangle",      "-A",        "FAKESIP_S",
+                                  "-i",          iface_str,   "-p",
+                                  "icmp",        "--icmp-type",
+                                  "11",          "-j",        "DROP",
+                                  NULL};
 
     char *ipt_iface_src_cmd[] = {"iptables", "-w",        "-t", "mangle",
                                  "-A",       "FAKESIP_S", "-i", iface_str,
@@ -50,6 +63,12 @@ static int ipt4_iface_setup(void)
                                  "-j",       "FAKESIP_R", NULL};
 
     if (g_ctx.alliface) {
+        res = fs_execute_command(ipt_alliface_icmp_cmd, 0, NULL);
+        if (res < 0) {
+            E(T(fs_execute_command));
+            return -1;
+        }
+
         res = fs_execute_command(ipt_alliface_src_cmd, 0, NULL);
         if (res < 0) {
             E(T(fs_execute_command));
@@ -67,6 +86,12 @@ static int ipt4_iface_setup(void)
         res = snprintf(iface_str, sizeof(iface_str), "%s", g_ctx.iface[i]);
         if (res < 0 || (size_t) res >= sizeof(iface_str)) {
             E("ERROR: snprintf(): %s", "failure");
+            return -1;
+        }
+
+        res = fs_execute_command(ipt_iface_icmp_cmd, 0, NULL);
+        if (res < 0) {
+            E(T(fs_execute_command));
             return -1;
         }
 
@@ -103,12 +128,6 @@ int fs_ipt4_setup(void)
          "FAKESIP_D", NULL},
 
         {"iptables", "-w", "-t", "mangle", "-N", "FAKESIP_R", NULL},
-
-        /*
-            drop time-exceeded ICMP packets
-        */
-        {"iptables", "-w", "-t", "mangle", "-A", "FAKESIP_S", "-p", "icmp",
-         "--icmp-type", "11", "-j", "DROP", NULL},
 
         /*
             exclude local IPs (from source)
