@@ -120,7 +120,7 @@ int fs_pkt4_make(uint8_t *buffer, size_t buffer_size, struct sockaddr *saddr,
     iph->ihl = sizeof(*iph) / 4;
     iph->tos = 0;
     iph->tot_len = htons(pkt_len);
-    iph->id = ((rand() & 0xff) << 8) | (rand() & 0xff);
+    iph->id = htons(FS_FAKE_IPV4_ID);
     iph->frag_off = htons(1 << 14 /* DF */);
     iph->ttl = ttl;
     iph->protocol = IPPROTO_UDP;

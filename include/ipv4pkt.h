@@ -25,6 +25,8 @@
 #include <netinet/udp.h>
 #include <sys/socket.h>
 
+#define FS_FAKE_IPV4_ID UINT16_C(0x4653)
+
 int fs_pkt4_parse(void *pkt_data, int pkt_len, struct sockaddr *saddr,
                   struct sockaddr *daddr, uint8_t *ttl,
                   struct udphdr **udph_ptr, int *udp_payload_len);

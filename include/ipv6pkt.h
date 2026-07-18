@@ -25,6 +25,10 @@
 #include <netinet/udp.h>
 #include <sys/socket.h>
 
+#define FS_FAKE_IPV6_FLOW_LABEL UINT32_C(0x46553)
+#define FS_FAKE_IPV6_FLOW_WORD \
+    ((UINT32_C(6) << 28) | FS_FAKE_IPV6_FLOW_LABEL)
+
 int fs_pkt6_parse(void *pkt_data, int pkt_len, struct sockaddr *saddr,
                   struct sockaddr *daddr, uint8_t *ttl,
                   struct udphdr **udph_ptr, int *udp_payload_len);
