@@ -62,15 +62,15 @@ awk '
 ' "$ROOT_DIR"/src/ipv4pkt.c "$ROOT_DIR"/src/ipv6pkt.c \
    "$ROOT_DIR"/src/ipv6nft.c "$ROOT_DIR"/src/ipv6ipt.c | tee -a "$LOG"
 
-section "nft IPv6 Syntax Probe"
+section "nft Tagged ICMP Syntax Probe"
 if command -v nft >/dev/null 2>&1; then
-    NFT_PROBE="$WORK_DIR/fakesip-ip6-bad.nft"
+    NFT_PROBE="$WORK_DIR/fakesip-tagged-icmp.nft"
     cat >"$NFT_PROBE" <<'NFT'
-table ip6 fakesip_probe {
+table ip fakesip_probe {
     chain fs_prerouting {
         type filter hook prerouting priority mangle - 5;
         policy accept;
-        icmp type time-exceeded counter drop;
+        icmp type time-exceeded @th,96,16 0x4653 counter drop;
     }
 }
 NFT
@@ -80,35 +80,13 @@ table ip6 fakesip_probe {
     chain fs_prerouting {
         type filter hook prerouting priority mangle - 5;
         policy accept;
-        icmpv6 type time-exceeded counter drop;
+        icmpv6 type time-exceeded @th,64,32 0x60046553 counter drop;
     }
 }
 NFT
     run nft -c -f "$NFT_PROBE"
 else
     echo "skip: nft not installed" | tee -a "$LOG"
-fi
-
-section "iptables IPv6 Syntax Probe"
-if command -v ip6tables-restore >/dev/null 2>&1; then
-    BAD_IP6="$WORK_DIR/fakesip-ip6-bad.rules"
-    GOOD_IP6="$WORK_DIR/fakesip-ip6-good.rules"
-    cat >"$BAD_IP6" <<'RULES'
-*mangle
-:FAKESIP_PROBE -
--A FAKESIP_PROBE -p icmp --icmp-type 11 -j DROP
-COMMIT
-RULES
-    cat >"$GOOD_IP6" <<'RULES'
-*mangle
-:FAKESIP_PROBE -
--A FAKESIP_PROBE -p ipv6-icmp --icmpv6-type time-exceeded -j DROP
-COMMIT
-RULES
-    run ip6tables-restore --test "$BAD_IP6"
-    run ip6tables-restore --test "$GOOD_IP6"
-else
-    echo "skip: ip6tables-restore not installed" | tee -a "$LOG"
 fi
 
 section "Summary"

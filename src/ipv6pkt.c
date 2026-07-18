@@ -112,8 +112,7 @@ int fs_pkt6_make(uint8_t *buffer, size_t buffer_size, struct sockaddr *saddr,
     udppl = buffer + sizeof(*ip6h) + sizeof(*udph);
 
     memset(ip6h, 0, sizeof(*ip6h));
-    ip6h->ip6_flow = htonl((6 << 28) /* version */ | (0 << 20) /* traffic */ |
-                           0 /* flow */);
+    ip6h->ip6_flow = htonl(FS_FAKE_IPV6_FLOW_WORD);
     ip6h->ip6_plen = htons(sizeof(*udph) + udp_payload_size);
     ip6h->ip6_nxt = IPPROTO_UDP;
     ip6h->ip6_hops = ttl;

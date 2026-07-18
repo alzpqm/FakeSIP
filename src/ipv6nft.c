@@ -24,6 +24,7 @@
 #include <stdlib.h>
 
 #include "globvar.h"
+#include "ipv6pkt.h"
 #include "logging.h"
 #include "process.h"
 
@@ -36,8 +37,9 @@ static int nft6_iface_setup(void)
 
     if (g_ctx.alliface) {
         res = snprintf(nftstr, sizeof(nftstr),
-                       "add rule ip6 fakesip fs_prerouting icmpv6 type "
-                       "time-exceeded counter drop");
+                       "insert rule ip6 fakesip fs_prerouting icmpv6 type "
+                       "time-exceeded @th,64,32 0x%08x counter drop",
+                       (unsigned int) FS_FAKE_IPV6_FLOW_WORD);
         if (res < 0 || (size_t) res >= sizeof(nftstr)) {
             E("ERROR: snprintf(): %s", "failure");
             return -1;
@@ -77,9 +79,10 @@ static int nft6_iface_setup(void)
 
     for (i = 0; g_ctx.iface[i]; i++) {
         res = snprintf(nftstr, sizeof(nftstr),
-                       "add rule ip6 fakesip fs_prerouting iifname \"%s\" "
-                       "icmpv6 type time-exceeded counter drop",
-                       g_ctx.iface[i]);
+                       "insert rule ip6 fakesip fs_prerouting iifname \"%s\" "
+                       "icmpv6 type time-exceeded @th,64,32 0x%08x "
+                       "counter drop",
+                       g_ctx.iface[i], (unsigned int) FS_FAKE_IPV6_FLOW_WORD);
         if (res < 0 || (size_t) res >= sizeof(nftstr)) {
             E("ERROR: snprintf(): %s", "failure");
             return -1;

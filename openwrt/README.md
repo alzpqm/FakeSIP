@@ -133,10 +133,10 @@ The package enables silent mode by default for long-running routers. Set
 `fakesip.main.log_file` only while debugging; high-volume packet logs can fill
 `/tmp` quickly on busy links.
 
-FakeSIP also suppresses ICMP/ICMPv6 time-exceeded replies used by hop-limit
-probing. The packaged rules scope this suppression to the configured FakeSIP
-interfaces; unrelated LAN or non-selected interfaces should not be globally
-hijacked.
+In nftables mode, FakeSIP tags its forged IPv4/IPv6 packets and suppresses only
+time-exceeded replies that quote that tag. Normal `mtr` and traceroute replies
+remain visible. The iptables fallback does not suppress time-exceeded traffic
+because it cannot perform the same inner-packet match without extra modules.
 
 ## Optional iptables Mode
 

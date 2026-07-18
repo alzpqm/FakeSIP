@@ -463,6 +463,19 @@ Mac-side backup after reverting to global no-bypass mode:
 sha256: d707d7d985dfce263262c70a7ca761a6c9cad0febb1fccee4402fc4b3755d331
 ```
 
+### Interface-Scoped ICMP Drops Still Break MTR
+
+The interface-scoping fix prevented unrelated interfaces from being affected,
+but each selected WAN still dropped every ICMP/ICMPv6 time-exceeded reply. On
+2026-07-18, `mtr` to mainland China targets showed every intermediate IPv4 and
+IPv6 hop as `???`, while the corresponding nft drop counters increased.
+
+The fix tags forged IPv4 packets with IP ID `0x4653` and forged IPv6 packets
+with flow word `0x60046553`. nftables now inspects the packet quoted inside the
+ICMP error and drops only matching FakeSIP replies. Normal MTR replies pass. The
+iptables fallback no longer installs a broad time-exceeded drop rule. This fix
+is packaged in OpenWrt r12.
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`
@@ -488,5 +501,4 @@ The script performs:
 - host/toolchain capture
 - debug build
 - static probes for the confirmed source-level issues
-- nft IPv6 syntax checks
-- iptables-restore syntax checks when available
+- nft tagged ICMP/ICMPv6 syntax checks
