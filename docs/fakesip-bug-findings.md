@@ -473,7 +473,8 @@ IPv6 hop as `???`, while the corresponding nft drop counters increased.
 The fix tags forged IPv4 packets with IP ID `0x4653` and forged IPv6 packets
 with flow word `0x60046553`. nftables now inspects the packet quoted inside the
 ICMP error and drops only matching FakeSIP replies. Normal MTR replies pass. The
-iptables fallback no longer installs a broad time-exceeded drop rule.
+iptables fallback no longer installs a broad time-exceeded drop rule. This fix
+is packaged in OpenWrt r12.
 
 ## Downgraded Or Unconfirmed Findings
 
