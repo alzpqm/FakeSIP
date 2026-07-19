@@ -20,7 +20,6 @@
 #define _GNU_SOURCE
 #include "mainfun.h"
 
-#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -92,13 +91,20 @@ static void print_usage(const char *name)
 }
 
 
+static int is_ascii_space(char value)
+{
+    return value == ' ' || value == '\t' || value == '\n' || value == '\r' ||
+           value == '\f' || value == '\v';
+}
+
+
 static int parse_ull(const char *value, unsigned long long *result)
 {
     unsigned long long parsed;
     char *end;
 
     if (!value || !result || !value[0] || value[0] == '+' ||
-        value[0] == '-' || isspace((unsigned char) value[0])) {
+        value[0] == '-' || is_ascii_space(value[0])) {
         return -1;
     }
 
