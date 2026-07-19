@@ -250,9 +250,13 @@ void fs_payload_cleanup(void)
 }
 
 
-void th_payload_get(uint8_t **payload_ptr, size_t *payload_len)
+int th_payload_get(uint8_t **payload_ptr, size_t *payload_len)
 {
+    if (!current_node || !payload_ptr || !payload_len) {
+        return -1;
+    }
     *payload_ptr = current_node->payload;
     *payload_len = current_node->payload_len;
     current_node = current_node->next;
+    return 0;
 }

@@ -44,6 +44,32 @@ static void signal_handler(int sig)
 }
 
 
+static int parse_pid_from_string(const char *str, pid_t *pid)
+{
+    char *endptr;
+    unsigned long tmp;
+
+    if (!str || !pid) {
+        return -1;
+    }
+
+    errno = 0;
+    tmp = strtoul(str, &endptr, 10);
+
+    /* Check if conversion failed or entire string wasn't consumed */
+    if (errno != 0 || *endptr != '\0' || endptr == str) {
+        return -1;
+    }
+
+    if (tmp > 2147483647) { /* Ensure it fits in pid_t */
+        return -1;
+    }
+
+    *pid = (pid_t) tmp;
+    return 0;
+}
+
+
 int fs_signal_setup(void)
 {
     struct sigaction sa;
@@ -108,7 +134,9 @@ int fs_kill_running(int signal)
 
     matched = err = 0;
     while ((entry = readdir(procfs))) {
-        pid = strtoull(entry->d_name, NULL, 0);
+        if (parse_pid_from_string(entry->d_name, &pid) < 0) {
+            continue;
+        }
         if (pid <= 1 || pid == self_pid) {
             continue;
         }

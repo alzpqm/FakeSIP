@@ -406,7 +406,11 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
             snd_ttl = calc_snd_ttl(hop);
         }
 
-        th_payload_get(&payload, &payload_len);
+        res = th_payload_get(&payload, &payload_len);
+        if (res < 0) {
+            E(T(th_payload_get));
+            return -1;
+        }
 
         for (i = 0; i < g_ctx.repeat; i++) {
             res = send_payload(sll, daddr, saddr, snd_ttl, udph->dest,
@@ -450,7 +454,11 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
             snd_ttl = calc_snd_ttl(hop);
         }
 
-        th_payload_get(&payload, &payload_len);
+        res = th_payload_get(&payload, &payload_len);
+        if (res < 0) {
+            E(T(th_payload_get));
+            return -1;
+        }
 
         for (i = 0; i < g_ctx.repeat; i++) {
             res = send_payload(sll, saddr, daddr, snd_ttl, udph->source,

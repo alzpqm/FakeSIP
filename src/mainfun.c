@@ -50,6 +50,27 @@
 #define VERSION "dev"
 #endif /* VERSION */
 
+static int parse_strtoull(const char *str, unsigned long long *result)
+{
+    char *endptr;
+    unsigned long long tmp;
+
+    if (!str || !result) {
+        return -1;
+    }
+
+    errno = 0;
+    tmp = strtoull(str, &endptr, 0);
+
+    /* Check if conversion failed or entire string wasn't consumed */
+    if (errno != 0 || *endptr != '\0' || endptr == str) {
+        return -1;
+    }
+
+    *result = tmp;
+    return 0;
+}
+
 static void print_usage(const char *name)
 {
     static const char *usage_fmt =
@@ -225,8 +246,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'm':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT32_MAX) {
+                if (parse_strtoull(optarg, &tmp) < 0 || tmp > UINT32_MAX) {
                     fprintf(stderr, "%s: invalid value for -m.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -235,8 +255,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'n':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT32_MAX) {
+                if (parse_strtoull(optarg, &tmp) < 0 || tmp > UINT32_MAX) {
                     fprintf(stderr, "%s: invalid value for -n.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -245,8 +264,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'r':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > 10) {
+                if (parse_strtoull(optarg, &tmp) < 0 || tmp > 10) {
                     fprintf(stderr, "%s: invalid value for -r.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -259,8 +277,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 't':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT8_MAX) {
+                if (parse_strtoull(optarg, &tmp) < 0 || tmp > UINT8_MAX) {
                     fprintf(stderr, "%s: invalid value for -t.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -279,8 +296,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'x':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT32_MAX) {
+                if (parse_strtoull(optarg, &tmp) < 0 || tmp > UINT32_MAX) {
                     fprintf(stderr, "%s: invalid value for -x.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -289,8 +305,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'y':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp >= 100) {
+                if (parse_strtoull(optarg, &tmp) < 0 || tmp >= 100) {
                     fprintf(stderr, "%s: invalid value for -y.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
