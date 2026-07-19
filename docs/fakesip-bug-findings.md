@@ -476,6 +476,35 @@ ICMP error and drops only matching FakeSIP replies. Normal MTR replies pass. The
 iptables fallback no longer installs a broad time-exceeded drop rule. This fix
 is packaged in OpenWrt r12.
 
+### Long-Running Process Robustness
+
+A follow-up audit found several defensive and recovery gaps:
+
+- `th_payload_get()` dereferenced its output pointers and the current payload
+  node without validation.
+- signal handlers wrote an ordinary `int` instead of a volatile
+  `sig_atomic_t` flag.
+- numeric options and `/proc` PID names were accepted without checking
+  `strtoull()` overflow or trailing characters.
+- the source-info ring relied on implicit initialization markers instead of an
+  explicit valid-entry count and argument/index guards.
+- recoverable NFQUEUE receive errors counted toward process termination.
+- command pipe write, close, and interrupted `waitpid()` failures could be
+  hidden by a successful child exit.
+
+The fixes add explicit API failures, strict parsing, bounded cache accounting,
+capped NFQUEUE backoff, pipe error propagation, and early SIGPIPE handling. The
+same change also accepts an exact 1200-byte custom payload, avoids direct
+`realloc()` assignment, and replaces the payload random-number multiplication
+with width-aware composition.
+
+Run the focused regression tests with:
+
+```sh
+make DEBUG=1
+./tools/core-regression-test.sh
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`

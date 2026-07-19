@@ -31,18 +31,19 @@
 #include "globvar.h"
 #include "logging.h"
 
-int fs_execute_command(char **argv, int silent, char *input)
+int fs_execute_command(char **argv, int silent, const char *input)
 {
-    int res, pipefd[2], status, fd, i;
+    int res, pipefd[2], status, fd, i, io_failed;
     size_t input_len, written;
     ssize_t n;
-    pid_t pid;
+    pid_t pid, wait_res;
 
     if (!argv || !argv[0]) {
         E("ERROR: fs_execute_command(): %s", "invalid argv");
         return -1;
     }
 
+    pipefd[0] = pipefd[1] = -1;
     if (input) {
         res = pipe(pipefd);
         if (res < 0) {
@@ -68,13 +69,13 @@ int fs_execute_command(char **argv, int silent, char *input)
             fd = open("/dev/null", O_WRONLY);
             if (fd < 0) {
                 E("ERROR: open(): %s", strerror(errno));
-                _exit(EXIT_FAILURE);
+                goto child_exit;
             }
         } else if (g_ctx.logfp && g_ctx.logfp != stderr) {
             fd = fileno(g_ctx.logfp);
             if (fd < 0) {
                 E("ERROR: fileno(): %s", strerror(errno));
-                _exit(EXIT_FAILURE);
+                goto child_exit;
             }
         }
 
@@ -82,55 +83,90 @@ int fs_execute_command(char **argv, int silent, char *input)
             res = dup2(fd, STDOUT_FILENO);
             if (res < 0) {
                 E("ERROR: dup2(): %s", strerror(errno));
-                _exit(EXIT_FAILURE);
+                goto child_exit;
             }
             res = dup2(fd, STDERR_FILENO);
             if (res < 0) {
                 E("ERROR: dup2(): %s", strerror(errno));
-                _exit(EXIT_FAILURE);
+                goto child_exit;
             }
-            close(fd);
+            if (fd != STDOUT_FILENO && fd != STDERR_FILENO) {
+                close(fd);
+            }
+            fd = -1;
         }
 
         if (input) {
             close(pipefd[1]);
+            pipefd[1] = -1;
             res = dup2(pipefd[0], STDIN_FILENO);
             if (res < 0) {
                 E("ERROR: dup2(): %s", strerror(errno));
-                _exit(EXIT_FAILURE);
+                goto child_exit;
             }
             close(pipefd[0]);
+            pipefd[0] = -1;
         }
 
         execvp(argv[0], argv);
 
         E("ERROR: execvp(): %s: %s", argv[0], strerror(errno));
 
+child_exit:
+        if (fd >= 0 && fd != STDOUT_FILENO && fd != STDERR_FILENO) {
+            close(fd);
+        }
+        if (pipefd[0] >= 0) {
+            close(pipefd[0]);
+        }
+        if (pipefd[1] >= 0) {
+            close(pipefd[1]);
+        }
         _exit(EXIT_FAILURE);
     }
 
+    io_failed = 0;
     if (input) {
-        close(pipefd[0]);
+        if (close(pipefd[0]) < 0) {
+            E("ERROR: close(): pipe read end: %s", strerror(errno));
+            io_failed = 1;
+        }
+        pipefd[0] = -1;
         input_len = strlen(input);
-        for (written = 0; written < input_len; written += n) {
+        written = 0;
+        while (written < input_len) {
             n = write(pipefd[1], input + written, input_len - written);
             if (n < 0) {
+                if (errno == EINTR) {
+                    continue;
+                }
                 E("ERROR: write(): %s", strerror(errno));
+                io_failed = 1;
                 break;
             } else if (n == 0) {
                 E("ERROR: write(): %s", "short write");
+                io_failed = 1;
                 break;
             }
+            written += (size_t) n;
         }
-        close(pipefd[1]);
+        if (close(pipefd[1]) < 0) {
+            E("ERROR: close(): pipe write end: %s", strerror(errno));
+            io_failed = 1;
+        }
+        pipefd[1] = -1;
     }
 
-    if (waitpid(pid, &status, 0) < 0) {
+    do {
+        wait_res = waitpid(pid, &status, 0);
+    } while (wait_res < 0 && errno == EINTR);
+
+    if (wait_res < 0) {
         E("ERROR: waitpid(): %s", strerror(errno));
         goto child_failed;
     }
 
-    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+    if (!io_failed && WIFEXITED(status) && WEXITSTATUS(status) == 0) {
         return 0;
     }
 

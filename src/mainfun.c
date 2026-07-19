@@ -20,6 +20,7 @@
 #define _GNU_SOURCE
 #include "mainfun.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -91,11 +92,35 @@ static void print_usage(const char *name)
 }
 
 
+static int parse_ull(const char *value, unsigned long long *result)
+{
+    unsigned long long parsed;
+    char *end;
+
+    if (!value || !result || !value[0] || value[0] == '+' ||
+        value[0] == '-' || isspace((unsigned char) value[0])) {
+        return -1;
+    }
+
+    errno = 0;
+    end = NULL;
+    parsed = strtoull(value, &end, 0);
+    if (errno == ERANGE || end == value || !end || *end != '\0') {
+        return -1;
+    }
+
+    *result = parsed;
+    return 0;
+}
+
+
 int main(int argc, char *argv[])
 {
     unsigned long long tmp;
     int res, opt, exitcode;
-    size_t plinfo_cap, iface_cap, plinfo_cnt, iface_cnt;
+    size_t plinfo_cap, iface_cap, plinfo_cnt, iface_cnt, new_cap;
+    struct payload_info *new_plinfo;
+    const char **new_iface;
     const char *iface_info, *direction_info, *ipproto_info;
 
     exitcode = EXIT_FAILURE;
@@ -158,16 +183,23 @@ int main(int argc, char *argv[])
 
                 plinfo_cnt++;
                 if (plinfo_cnt >= plinfo_cap - 1) {
-                    g_ctx.plinfo = realloc(
-                        g_ctx.plinfo, 2 * plinfo_cap * sizeof(*g_ctx.plinfo));
-                    if (!g_ctx.plinfo) {
-                        fprintf(stderr, "%s: calloc(): %s.\n", argv[0],
+                    if (plinfo_cap > SIZE_MAX / 2 / sizeof(*g_ctx.plinfo)) {
+                        fprintf(stderr, "%s: too many payload options.\n",
+                                argv[0]);
+                        goto free_mem;
+                    }
+                    new_cap = 2 * plinfo_cap;
+                    new_plinfo = realloc(g_ctx.plinfo,
+                                         new_cap * sizeof(*g_ctx.plinfo));
+                    if (!new_plinfo) {
+                        fprintf(stderr, "%s: realloc(): %s.\n", argv[0],
                                 strerror(errno));
                         goto free_mem;
                     }
+                    g_ctx.plinfo = new_plinfo;
                     memset(&g_ctx.plinfo[plinfo_cap], 0,
                            plinfo_cap * sizeof(*g_ctx.plinfo));
-                    plinfo_cap *= 2;
+                    plinfo_cap = new_cap;
                 }
 
                 g_ctx.plinfo[plinfo_cnt - 1].type = opt == 'b'
@@ -191,16 +223,23 @@ int main(int argc, char *argv[])
             case 'i':
                 iface_cnt++;
                 if (iface_cnt >= iface_cap - 1) {
-                    g_ctx.iface = realloc(
-                        g_ctx.iface, 2 * iface_cap * sizeof(*g_ctx.iface));
-                    if (!g_ctx.iface) {
-                        fprintf(stderr, "%s: calloc(): %s.\n", argv[0],
+                    if (iface_cap > SIZE_MAX / 2 / sizeof(*g_ctx.iface)) {
+                        fprintf(stderr, "%s: too many interface options.\n",
+                                argv[0]);
+                        goto free_mem;
+                    }
+                    new_cap = 2 * iface_cap;
+                    new_iface = realloc(g_ctx.iface,
+                                        new_cap * sizeof(*g_ctx.iface));
+                    if (!new_iface) {
+                        fprintf(stderr, "%s: realloc(): %s.\n", argv[0],
                                 strerror(errno));
                         goto free_mem;
                     }
+                    g_ctx.iface = new_iface;
                     memset(&g_ctx.iface[iface_cap], 0,
                            iface_cap * sizeof(*g_ctx.iface));
-                    iface_cap *= 2;
+                    iface_cap = new_cap;
                 }
 
                 if (!optarg[0]) {
@@ -225,8 +264,8 @@ int main(int argc, char *argv[])
                 break;
 
             case 'm':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT32_MAX) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp ||
+                    tmp > UINT32_MAX) {
                     fprintf(stderr, "%s: invalid value for -m.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -235,8 +274,8 @@ int main(int argc, char *argv[])
                 break;
 
             case 'n':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT32_MAX) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp ||
+                    tmp > UINT16_MAX) {
                     fprintf(stderr, "%s: invalid value for -n.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -245,8 +284,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'r':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > 10) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp || tmp > 10) {
                     fprintf(stderr, "%s: invalid value for -r.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -259,8 +297,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 't':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT8_MAX) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp || tmp > UINT8_MAX) {
                     fprintf(stderr, "%s: invalid value for -t.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -279,8 +316,8 @@ int main(int argc, char *argv[])
                 break;
 
             case 'x':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp > UINT32_MAX) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp ||
+                    tmp > UINT32_MAX) {
                     fprintf(stderr, "%s: invalid value for -x.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -289,8 +326,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'y':
-                tmp = strtoull(optarg, NULL, 0);
-                if (!tmp || tmp >= 100) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp || tmp >= 100) {
                     fprintf(stderr, "%s: invalid value for -y.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -383,6 +419,12 @@ int main(int argc, char *argv[])
     E("Home page: https://github.com/MikeWang000000/FakeSIP");
     E("");
 
+    res = fs_signal_setup();
+    if (res < 0) {
+        EE(T(fs_signal_setup));
+        goto cleanup_logger;
+    }
+
     res = fs_payload_setup();
     if (res < 0) {
         EE(T(fs_payload_setup));
@@ -411,12 +453,6 @@ int main(int argc, char *argv[])
     if (res < 0) {
         EE(T(fs_nfrules_setup));
         goto cleanup_nfq;
-    }
-
-    res = fs_signal_setup();
-    if (res < 0) {
-        EE(T(fs_signal_setup));
-        goto cleanup_nfrules;
     }
 
     res = setpriority(PRIO_PROCESS, getpid(), -20);
