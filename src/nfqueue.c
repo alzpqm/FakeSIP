@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <arpa/inet.h>
 #include <net/ethernet.h>
 #include <netinet/ip.h>
@@ -42,6 +43,27 @@
 static int fd = -1;
 static struct nfq_handle *h = NULL;
 static struct nfq_q_handle *qh = NULL;
+
+#define NFQ_MAX_PACKET_ERRORS 20U
+#define NFQ_BACKOFF_MAX_MS    1000U
+
+static void error_backoff(unsigned int error_count)
+{
+    unsigned int delay_ms, shift;
+    struct timespec delay, remaining;
+
+    shift = error_count > 7 ? 7 : error_count;
+    delay_ms = 10U << shift;
+    if (delay_ms > NFQ_BACKOFF_MAX_MS) {
+        delay_ms = NFQ_BACKOFF_MAX_MS;
+    }
+
+    delay.tv_sec = delay_ms / 1000U;
+    delay.tv_nsec = (long) (delay_ms % 1000U) * 1000000L;
+    while (nanosleep(&delay, &remaining) < 0 && errno == EINTR && !g_ctx.exit) {
+        delay = remaining;
+    }
+}
 
 static int callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
                     struct nfq_data *nfa, void *data)
@@ -173,6 +195,10 @@ int fs_nfq_setup(void)
     }
 
     fd = nfq_fd(h);
+    if (fd < 0) {
+        E("ERROR: nfq_fd(): %s", "failure");
+        goto destroy_queue;
+    }
 
     opt_len = sizeof(opt);
     res = getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &opt, &opt_len);
@@ -185,8 +211,13 @@ int fs_nfq_setup(void)
         opt = 1048576;
         res = setsockopt(fd, SOL_SOCKET, SO_RCVBUFFORCE, &opt, sizeof(opt));
         if (res < 0) {
-            E("ERROR: setsockopt(): SO_RCVBUFFORCE: %s", strerror(errno));
-            goto destroy_queue;
+            E("WARNING: setsockopt(): SO_RCVBUFFORCE: %s; trying SO_RCVBUF",
+              strerror(errno));
+            res = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &opt, sizeof(opt));
+            if (res < 0) {
+                E("ERROR: setsockopt(): SO_RCVBUF: %s", strerror(errno));
+                goto destroy_queue;
+            }
         }
     }
 
@@ -194,9 +225,12 @@ int fs_nfq_setup(void)
 
 destroy_queue:
     nfq_destroy_queue(qh);
+    qh = NULL;
 
 close_nfq:
     nfq_close(h);
+    h = NULL;
+    fd = -1;
 
     return -1;
 }
@@ -219,9 +253,10 @@ void fs_nfq_cleanup(void)
 
 int fs_nfq_loop(void)
 {
-    static const size_t buffsize = UINT16_MAX;
+    static const size_t buffsize = UINT16_MAX + 4096U;
 
-    int res, ret, err_cnt;
+    int res, ret;
+    unsigned int packet_err_cnt, transient_err_cnt;
     ssize_t recv_len;
     char *buff;
 
@@ -231,25 +266,27 @@ int fs_nfq_loop(void)
         return -1;
     }
 
-    err_cnt = 0;
+    packet_err_cnt = transient_err_cnt = 0;
 
     while (!g_ctx.exit) {
-        if (err_cnt >= 20) {
-            E("too many errors, exiting...");
-            ret = -1;
-            goto free_buff;
-        }
-
         recv_len = recv(fd, buff, buffsize, 0);
         if (recv_len < 0) {
-            err_cnt++;
             switch (errno) {
                 case EINTR:
                     continue;
                 case EAGAIN:
+#if EWOULDBLOCK != EAGAIN
+                case EWOULDBLOCK:
+#endif
                 case ETIMEDOUT:
+                    transient_err_cnt++;
+                    error_backoff(transient_err_cnt);
+                    continue;
                 case ENOBUFS:
-                    E("ERROR: recv(): %s", strerror(errno));
+                    transient_err_cnt++;
+                    E("WARNING: recv(): %s; NFQUEUE remains active",
+                      strerror(errno));
+                    error_backoff(transient_err_cnt);
                     continue;
                 default:
                     E("ERROR: recv(): %s", strerror(errno));
@@ -258,14 +295,28 @@ int fs_nfq_loop(void)
             }
         }
 
+        if (recv_len == 0) {
+            E("ERROR: recv(): %s", "NFQUEUE socket closed");
+            ret = -1;
+            goto free_buff;
+        }
+
+        transient_err_cnt = 0;
         res = nfq_handle_packet(h, buff, recv_len);
         if (res < 0) {
-            err_cnt++;
-            E("ERROR: nfq_handle_packet(): %s", "failure");
+            packet_err_cnt++;
+            E("ERROR: nfq_handle_packet(): failure (%u/%u)", packet_err_cnt,
+              NFQ_MAX_PACKET_ERRORS);
+            if (packet_err_cnt >= NFQ_MAX_PACKET_ERRORS) {
+                E("too many consecutive packet handling errors, exiting...");
+                ret = -1;
+                goto free_buff;
+            }
+            error_backoff(packet_err_cnt);
             continue;
         }
 
-        err_cnt = 0;
+        packet_err_cnt = 0;
     }
 
     ret = 0;

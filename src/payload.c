@@ -64,6 +64,20 @@ static const char *sip_fmt = "INVITE %s SIP/2.0\r\n"
 
 static struct payload_node *current_node;
 
+static unsigned long make_random_ulong(void)
+{
+    unsigned long value;
+
+    value = (unsigned long) rand();
+#if ULONG_MAX > UINT_MAX
+    value = (value << (sizeof(unsigned int) * CHAR_BIT)) ^
+            (unsigned long) rand();
+#endif
+
+    return value;
+}
+
+
 static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
 {
     int i, len_, buffsize;
@@ -71,7 +85,7 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
     unsigned long rand_ul[5], content_length;
 
     for (i = 0; i < 5; i++) {
-        rand_ul[i] = rand() * (ULONG_MAX / RAND_MAX);
+        rand_ul[i] = make_random_ulong();
     }
 
     if (sip_uri) {
@@ -126,10 +140,15 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
 
 static int make_custom(uint8_t *buffer, size_t *len, char *filepath)
 {
-    int res, len_, buffsize;
+    int extra, res;
+    size_t len_, buffsize;
     FILE *fp;
 
-    len_ = 0;
+    if (!buffer || !len || !filepath) {
+        E("ERROR: make_custom(): %s", "invalid argument");
+        return -1;
+    }
+
     buffsize = *len;
 
     fp = fopen(filepath, "rb");
@@ -138,21 +157,29 @@ static int make_custom(uint8_t *buffer, size_t *len, char *filepath)
         return -1;
     }
 
-    while (!feof(fp) && !ferror(fp) && len_ < buffsize) {
-        len_ += fread(buffer + len_, 1, buffsize - len_, fp);
-    }
+    len_ = fread(buffer, 1, buffsize, fp);
 
     if (ferror(fp)) {
-        E("ERROR: fread(): %s: %s", filepath, "failure");
+        E("ERROR: fread(): %s: %s", filepath,
+          strerror(errno ? errno : EIO));
         fclose(fp);
         return -1;
     }
 
-    if (!feof(fp)) {
-        E("ERROR: %s: Data too long. Maximum length is %d", filepath,
-          buffsize);
-        fclose(fp);
-        return -1;
+    if (len_ == buffsize) {
+        extra = fgetc(fp);
+        if (extra != EOF) {
+            E("ERROR: %s: Data too long. Maximum length is %zu", filepath,
+              buffsize);
+            fclose(fp);
+            return -1;
+        }
+        if (ferror(fp)) {
+            E("ERROR: fgetc(): %s: %s", filepath,
+              strerror(errno ? errno : EIO));
+            fclose(fp);
+            return -1;
+        }
     }
 
     res = fclose(fp);
@@ -250,9 +277,21 @@ void fs_payload_cleanup(void)
 }
 
 
-void th_payload_get(uint8_t **payload_ptr, size_t *payload_len)
+int th_payload_get(uint8_t **payload_ptr, size_t *payload_len)
 {
+    if (!payload_ptr || !payload_len) {
+        return -1;
+    }
+
+    *payload_ptr = NULL;
+    *payload_len = 0;
+    if (!current_node) {
+        return -1;
+    }
+
     *payload_ptr = current_node->payload;
     *payload_len = current_node->payload_len;
     current_node = current_node->next;
+
+    return 0;
 }

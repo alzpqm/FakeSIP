@@ -20,6 +20,6 @@
 #ifndef FS_PROCESS_H
 #define FS_PROCESS_H
 
-int fs_execute_command(char **argv, int silent, char *input);
+int fs_execute_command(char **argv, int silent, const char *input);
 
 #endif /* FS_PROCESS_H */

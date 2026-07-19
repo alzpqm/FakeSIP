@@ -20,6 +20,15 @@ OpenWrt packaging is available under [`openwrt/`](openwrt/). It includes:
 
 Build and install steps are documented in [`openwrt/README.md`](openwrt/README.md).
 
+## Tests
+
+After building FakeSIP on Linux, run the focused core regression suite with:
+
+```sh
+make DEBUG=1
+./tools/core-regression-test.sh
+```
+
 
 ## Usage
 
