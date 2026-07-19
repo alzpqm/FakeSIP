@@ -496,7 +496,7 @@ The fixes add explicit API failures, strict parsing, bounded cache accounting,
 capped NFQUEUE backoff, pipe error propagation, and early SIGPIPE handling. The
 same change also accepts an exact 1200-byte custom payload, avoids direct
 `realloc()` assignment, and replaces the payload random-number multiplication
-with width-aware composition.
+with width-aware composition. These fixes are packaged in OpenWrt r13.
 
 Run the focused regression tests with:
 
