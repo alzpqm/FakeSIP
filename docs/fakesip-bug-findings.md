@@ -505,6 +505,47 @@ make DEBUG=1
 ./tools/core-regression-test.sh
 ```
 
+### Download Asymmetry Under High UDP Load
+
+On 2026-07-26, the production-style OpenWrt r13 process was tested after users
+reported normal uploads but slow downloads. FakeHTTP was held stable for the
+valid test window: queue 512 kept PID 16550 and an unchanged nftables ruleset
+hash, with no queue backlog or drops. Results collected while either service
+was being reloaded before that window were discarded.
+
+The detailed FakeSIP capture contained 9,060 lines and no errors. It recorded
+2,970 original/fake pairs, and 6,257 lines (69%) mentioned UDP port 8567. This
+showed that the global rule was processing sustained P2P-style UDP traffic even
+while the foreground test used HTTPS/TCP. The saved log is:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/download-diag-20260726-053654Z/fakesip-download-diag.log
+sha256: 080ae20cfdbdb28edc2a4cb9b42daa58659bcd01fd1e9f13136e059e80531c67
+```
+
+The USTC LibreSpeed website was too variable for a strong causal estimate.
+Mean download rates were 41.5 Mbps with FakeSIP enabled at `repeat=2` and 42.9
+Mbps with FakeSIP stopped. Medians were 40.5 and 44.2 Mbps respectively.
+
+A fixed 64 MiB HTTPS range from TUNA, pinned to mainland IPv4 address
+101.6.15.130 and the same WAN source, was more repeatable. Median download
+rates were:
+
+```text
+repeat=2, enabled (first pass):   147.7 Mbps
+FakeSIP stopped:                 191.9 Mbps
+repeat=2, enabled (verification):134.0 Mbps
+repeat=1, enabled:               176.3 Mbps
+```
+
+Queue 513 remained at zero backlog, kernel drops, and userspace drops. CPU and
+memory were also normal, so this was not an NFQUEUE capacity failure. The
+working diagnosis is traffic amplification from `repeat=2` on a busy global
+UDP deployment. The live router was left in silent mode with `repeat=1`; all
+interfaces, TTL, marks, queue number, and no-bypass policy were unchanged.
+Treat `repeat=1` as the preferred operational setting for busy links, while
+keeping `repeat=2` available as an explicitly more aggressive choice.
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`
