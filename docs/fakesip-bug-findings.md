@@ -609,6 +609,53 @@ service addresses, and no private subscriber identity, credential, or vendor
 wire format is included. Their operational value must be decided by controlled
 A/B/A measurements before changing the production profile.
 
+#### OpenWrt r14 deployment and profile A/B/A
+
+OpenWrt 25.12.5 was upgraded with `apk add` to `fakesip-0.9.1-r14` and
+`luci-app-fakesip-1.0.0-r6`. The existing UCI file was preserved, and the live
+configuration was explicitly set to `sip_profile=china_all`, silent mode,
+`repeat=1`, TTL 3, IPv4 plus IPv6, and the same three WAN interfaces.
+
+A WAN capture confirmed that the generated packet was not merely a UI change.
+The 947-byte UDP payload contained a `z9hG4bK` Via branch, `Max-Forwards: 70`,
+one of the three configured IMS realms, AMR and AMR-WB SDP, and a 386-byte body
+matching the declared Content-Length. Tcpdump reported no capture drops.
+
+The payload comparison used Debian on the wired ESXi network, a temporary
+policy route to `pppoe-wancm`, fixed mainland IPv4 address `221.178.73.204`,
+HTTP/3 only, and the same 3,449,636-byte Alibaba CDN GIF. Standard SIP ran in
+three interleaved eight-request segments; the three-network IMS profile ran in
+two eight-request segments. All 40 requests returned HTTP 200 over HTTP/3 and
+downloaded the complete object. Segment medians were:
+
+```text
+standard SIP: 148.48, 138.58, 164.03 Mbps
+three-network IMS: 163.09, 170.16 Mbps
+combined standard / IMS: 143.76 / 165.03 Mbps
+```
+
+Both IMS segments were faster than their neighbouring standard segments, but
+the path still showed substantial run-to-run variance. This supports keeping
+the standards-compliant IMS profile as the r14 production candidate; it does
+not prove that the carrier prioritizes or whitelists SIP. After the test, the
+temporary policy rule and capture files were removed, queue 513 reported zero
+backlog, kernel drops, and userspace drops, and the service was left in the IMS
+rotation profile.
+
+The pre-upgrade router rollback archive is retained on the router as:
+
+```text
+/root/fakesip-backup-20260726-152708-pre-r14.tgz
+sha256: 8dfd6e03b02ac6087374a3fb714e4d0628b0a8de2b548f073494d369dfd0d99a
+```
+
+The same archive, r14/r6 APKs, source archive, and complete Git bundle are also
+stored under:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/ims-r14-20260726-072516Z/
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`
