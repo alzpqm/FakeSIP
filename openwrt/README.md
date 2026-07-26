@@ -117,6 +117,34 @@ deduplicates them before starting FakeSIP. Values in `network` may be logical
 OpenWrt network names such as `wan`; Linux devices such as `pppoe-wan` are also
 accepted for robustness, but keeping device names under `interface` is clearer.
 
+## SIP Payload Profile
+
+Fresh installs default to rotating standards-based IMS payloads for China
+Mobile, China Unicom, and China Telecom. In LuCI, select the profile under the
+**Payload** tab. The equivalent UCI values are:
+
+```sh
+uci set fakesip.main.sip_profile='china_all'
+uci commit fakesip
+/etc/init.d/fakesip restart
+```
+
+Available values are `standard`, `china_mobile`, `china_unicom`,
+`china_telecom`, `china_all`, and `custom`. Custom mode reads one or more
+`sip_uri` list values:
+
+```sh
+uci set fakesip.main.sip_profile='custom'
+uci -q delete fakesip.main.sip_uri
+uci add_list fakesip.main.sip_uri='sip:user@example.com'
+uci commit fakesip
+/etc/init.d/fakesip restart
+```
+
+The carrier profiles use public 3GPP realm syntax and do not contain real
+subscriber identities or IMS credentials. Treat them as test profiles rather
+than proof that a particular carrier prioritizes SIP.
+
 ## Check It
 
 ```sh

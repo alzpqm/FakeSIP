@@ -33,10 +33,42 @@ static int write_all(int fd, const uint8_t *data, size_t len)
     return 0;
 }
 
+static int payload_contains(const uint8_t *payload, size_t payload_len,
+                            const char *text)
+{
+    return memmem(payload, payload_len, text, strlen(text)) != NULL;
+}
+
+static int content_length_matches(const uint8_t *payload, size_t payload_len)
+{
+    char text[2048], *body, *field;
+    size_t declared_length;
+
+    if (payload_len >= sizeof(text)) {
+        return 0;
+    }
+
+    memcpy(text, payload, payload_len);
+    text[payload_len] = '\0';
+    field = strstr(text, "\r\nContent-Length: ");
+    body = strstr(text, "\r\n\r\n");
+    if (!field || !body || field >= body ||
+        sscanf(field, "\r\nContent-Length: %zu", &declared_length) != 1) {
+        return 0;
+    }
+
+    return declared_length == payload_len - (size_t) (body + 4 - text);
+}
+
 int main(void)
 {
     struct payload_info sip_payloads[] = {
         {FS_PAYLOAD_SIP, NULL},
+        {FS_PAYLOAD_END, NULL},
+    };
+    struct payload_info ims_payloads[] = {
+        {FS_PAYLOAD_SIP,
+         "sip:user@ims.mnc000.mcc460.3gppnetwork.org"},
         {FS_PAYLOAD_END, NULL},
     };
     struct payload_info custom_payloads[] = {
@@ -61,10 +93,45 @@ int main(void)
         th_payload_get(&payload, &payload_len) < 0 || !payload || !payload_len) {
         return fail("default SIP payload setup failed");
     }
+    if (!payload_contains(payload, payload_len, ";branch=z9hG4bK") ||
+        !payload_contains(payload, payload_len,
+                          "\r\nMax-Forwards: 70\r\n") ||
+        !payload_contains(payload, payload_len, "\r\nFrom: <sip:user@") ||
+        !payload_contains(payload, payload_len, "\r\nContact: <sip:user@") ||
+        !content_length_matches(payload, payload_len) ||
+        payload_contains(payload, payload_len, "198.51.100.") ||
+        payload_contains(payload, payload_len, "203.0.113.")) {
+        fs_payload_cleanup();
+        return fail("default SIP payload format is invalid");
+    }
     fs_payload_cleanup();
     if (th_payload_get(&payload, &payload_len) == 0) {
         return fail("payload remained available after cleanup");
     }
+
+    g_ctx.plinfo = ims_payloads;
+    if (fs_payload_setup() < 0 ||
+        th_payload_get(&payload, &payload_len) < 0 ||
+        !payload_contains(payload, payload_len,
+                          "INVITE sip:user@ims.mnc000.mcc460.3gppnetwork.org ") ||
+        !payload_contains(payload, payload_len,
+                          "\r\nSupported: 199, timer\r\n") ||
+        !payload_contains(payload, payload_len,
+                          "\r\nSession-Expires: 1800\r\n") ||
+        !payload_contains(payload, payload_len,
+                          "\r\nUser-Agent: PRD-IR92/18 ") ||
+        !payload_contains(payload, payload_len,
+                          "\r\na=rtpmap:97 AMR-WB/16000/1\r\n") ||
+        !payload_contains(payload, payload_len,
+                          "\r\na=rtpmap:96 AMR/8000/1\r\n") ||
+        !payload_contains(payload, payload_len, "\r\na=ptime:20\r\n") ||
+        !payload_contains(payload, payload_len, "\r\na=maxptime:240\r\n") ||
+        !content_length_matches(payload, payload_len) ||
+        payload_contains(payload, payload_len, "octet-align=1")) {
+        fs_payload_cleanup();
+        return fail("IMS SIP payload format is invalid");
+    }
+    fs_payload_cleanup();
 
     memset(expected, 0x5a, sizeof(expected));
     fd = mkstemp(path);

@@ -48,6 +48,42 @@ append_list_arg() {
 	[ -n "$value" ] && procd_append_param command "$flag" "$value"
 }
 
+append_sip_payloads() {
+	local section="$1"
+	local profile
+
+	config_get profile "$section" sip_profile standard
+	case "$profile" in
+		china_mobile)
+			procd_append_param command -u \
+				'sip:user@ims.mnc000.mcc460.3gppnetwork.org'
+			;;
+		china_unicom)
+			procd_append_param command -u \
+				'sip:user@ims.mnc001.mcc460.3gppnetwork.org'
+			;;
+		china_telecom)
+			procd_append_param command -u \
+				'sip:user@ims.mnc003.mcc460.3gppnetwork.org'
+			;;
+		china_all)
+			procd_append_param command -u \
+				'sip:user@ims.mnc000.mcc460.3gppnetwork.org'
+			procd_append_param command -u \
+				'sip:user@ims.mnc001.mcc460.3gppnetwork.org'
+			procd_append_param command -u \
+				'sip:user@ims.mnc003.mcc460.3gppnetwork.org'
+			;;
+		standard|custom|'')
+			config_list_foreach "$section" sip_uri append_list_arg -u
+			;;
+		*)
+			logger -t fakesip "unknown SIP profile '$profile'"
+			config_list_foreach "$section" sip_uri append_list_arg -u
+			;;
+	esac
+}
+
 append_interface_arg() {
 	local device="$1"
 
@@ -114,7 +150,7 @@ start_instance() {
 	append_bool_arg "$section" use_iptables -z
 	append_bool_arg "$section" silent -s 1
 
-	config_list_foreach "$section" sip_uri append_list_arg -u
+	append_sip_payloads "$section"
 	config_list_foreach "$section" payload_file append_list_arg -b
 
 	append_value_arg "$section" queue_num -n

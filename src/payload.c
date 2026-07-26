@@ -43,20 +43,48 @@ struct payload_node {
 };
 
 static const char *sdp_fmt = "v=0\r\n"
-                             "o=Admin %lu %lu IN IP4 %s\r\n"
+                             "o=- %lu %lu IN IP4 %s\r\n"
                              "s=-\r\n"
                              "c=IN IP4 %s\r\n"
                              "t=0 0\r\n"
                              "m=audio 6000 RTP/AVP 0\r\n"
                              "a=rtpmap:0 PCMU/8000\r\n";
 
+static const char *ims_sdp_fmt =
+    "v=0\r\n"
+    "o=- %lu %lu IN IP4 %s\r\n"
+    "s=-\r\n"
+    "c=IN IP4 %s\r\n"
+    "b=AS:41\r\n"
+    "t=0 0\r\n"
+    "m=audio 49152 RTP/AVP 97 96 101\r\n"
+    "b=RS:0\r\n"
+    "b=RR:2000\r\n"
+    "a=rtpmap:97 AMR-WB/16000/1\r\n"
+    "a=fmtp:97 mode-change-capability=2;max-red=0\r\n"
+    "a=rtpmap:96 AMR/8000/1\r\n"
+    "a=fmtp:96 mode-change-capability=2;max-red=0\r\n"
+    "a=rtpmap:101 telephone-event/8000\r\n"
+    "a=fmtp:101 0-15\r\n"
+    "a=ptime:20\r\n"
+    "a=maxptime:240\r\n"
+    "a=sendrecv\r\n";
+
+static const char *ims_headers =
+    "Supported: 199, timer\r\n"
+    "Session-Expires: 1800\r\n"
+    "User-Agent: PRD-IR92/18 term-Generic/IMS-UE "
+    "device-type/smart-phone mno-custom/none\r\n";
+
 static const char *sip_fmt = "INVITE %s SIP/2.0\r\n"
-                             "Via: SIP/2.0/UDP %s;branch=%lx\r\n"
-                             "From: <sip:%s>;tag=%lx\r\n"
+                             "Via: SIP/2.0/UDP %s;branch=z9hG4bK%lx\r\n"
+                             "Max-Forwards: 70\r\n"
+                             "From: <sip:user@%s>;tag=%lx\r\n"
                              "To: \"%s\" <%s>\r\n"
                              "Call-ID: %lx@%s\r\n"
                              "CSeq: 1 INVITE\r\n"
-                             "Contact: <sip:%s>\r\n"
+                             "Contact: <sip:user@%s>\r\n"
+                             "%s"
                              "Content-Type: application/sdp\r\n"
                              "Content-Length: %lu\r\n"
                              "\r\n"
@@ -80,12 +108,22 @@ static unsigned long make_random_ulong(void)
 
 static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
 {
-    int i, len_, buffsize;
-    char sip_uri_random[64], local[64], sdp_buf[180], *username;
+    int i, len_, buffsize, is_ims;
+    char sip_uri_random[96], local[64], sdp_buf[640], *username;
+    const char *extra_headers, *selected_sdp_fmt;
     unsigned long rand_ul[5], content_length;
 
     for (i = 0; i < 5; i++) {
         rand_ul[i] = make_random_ulong();
+    }
+
+    len_ = snprintf(local, sizeof(local), "100.%u.%u.%u",
+                    64U + (unsigned int) rand() % 64U,
+                    1U + (unsigned int) rand() % 254U,
+                    1U + (unsigned int) rand() % 254U);
+    if (len_ < 0 || (size_t) len_ >= sizeof(local)) {
+        E("ERROR: snprintf(): %s", "failure");
+        return -1;
     }
 
     if (sip_uri) {
@@ -96,7 +134,7 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
         }
     } else {
         len_ = snprintf(sip_uri_random, sizeof(sip_uri_random),
-                        "sip:user@203.0.113.%d", rand() % UINT8_MAX);
+                        "sip:user@%s", local);
         if (len_ < 0 || (size_t) len_ >= sizeof(sip_uri_random)) {
             E("ERROR: snprintf(): %s", "failure");
             return -1;
@@ -105,14 +143,12 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
     }
     username = sip_uri + 4;
 
-    len_ = snprintf(local, sizeof(local), "198.51.100.%d", rand() % UINT8_MAX);
-    if (len_ < 0 || (size_t) len_ >= sizeof(local)) {
-        E("ERROR: snprintf(): %s", "failure");
-        return -1;
-    }
-
-    len_ = snprintf(sdp_buf, sizeof(sdp_buf), sdp_fmt, rand_ul[0] & UINT32_MAX,
-                    rand_ul[1] & UINT32_MAX, local, local);
+    is_ims = strstr(sip_uri, ".3gppnetwork.org") != NULL;
+    selected_sdp_fmt = is_ims ? ims_sdp_fmt : sdp_fmt;
+    extra_headers = is_ims ? ims_headers : "";
+    len_ = snprintf(sdp_buf, sizeof(sdp_buf), selected_sdp_fmt,
+                    rand_ul[0] & UINT32_MAX, rand_ul[1] & UINT32_MAX, local,
+                    local);
     if (len_ < 0 || (size_t) len_ >= sizeof(sdp_buf)) {
         E("ERROR: snprintf(): %s", "failure");
         return -1;
@@ -123,7 +159,8 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
     buffsize = *len;
     len_ = snprintf((char *) buffer, buffsize, sip_fmt, sip_uri, local,
                     rand_ul[2], local, rand_ul[3], username, sip_uri,
-                    rand_ul[4], local, local, content_length, sdp_buf);
+                    rand_ul[4], local, local, extra_headers, content_length,
+                    sdp_buf);
     if (len_ < 0) {
         E("ERROR: snprintf(): %s", "failure");
         return -1;

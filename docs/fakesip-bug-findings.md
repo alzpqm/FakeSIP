@@ -546,6 +546,69 @@ interfaces, TTL, marks, queue number, and no-bypass policy were unchanged.
 Treat `repeat=1` as the preferred operational setting for busy links, while
 keeping `repeat=2` available as an explicitly more aggressive choice.
 
+### Controlled IPv4 and HTTP/3 Re-test
+
+The earlier USTC fixed-file samples are not used for the final comparison.
+The first pass did not force IPv4, and later requests encountered USTC mirror
+anti-abuse throttling. The controlled re-test used Debian on the wired ESXi
+network, `curl -4`, a fixed WAN policy, and the same 64 MiB range from:
+
+```text
+https://mirrors.tuna.tsinghua.edu.cn/debian-cd/current/amd64/iso-cd/debian-13.6.0-amd64-netinst.iso
+```
+
+On `pppoe-wancm`, the FakeSIP ON/OFF/ON medians were 454.59, 456.70, and
+444.73 Mbps. The combined 12-run ON median was 449.18 Mbps, 1.65% below the
+six-run OFF median. Every request received the complete 64 MiB from mainland
+IPv4 address `101.6.15.130`. Queue 513 had no backlog, kernel drops, or
+userspace drops. The difference is inside the observed line variance and does
+not support FakeSIP as the main TCP download limiter.
+
+A coordinated baseline with both FakeSIP and FakeHTTP stopped produced
+316.57, 483.35, 485.08, 454.62, 445.58, and 487.82 Mbps, with a median of
+468.99 Mbps. Compared with the stable ON measurements, the remaining roughly
+4-5% gap can be either small additive startup overhead or ordinary line
+variance; the data does not justify attributing it to either program.
+
+Because a TCP mirror does not exercise QUIC directly, a separate A/B used
+Taobao's mainland IPv4 endpoint `221.178.73.169` with `curl --http3-only`.
+FakeSIP ON/OFF/ON each ran eight times. All 24 requests stayed on HTTP/3,
+returned HTTP 200, and downloaded the same 93,901 bytes. Median total times
+were 46.66, 50.21, and 47.55 ms. Queue 513 counters increased during both ON
+passes and still reported zero drops. The production `repeat=1`, TTL 3 setup
+therefore did not cause a handshake failure, fallback, or measurable latency
+regression for this short QUIC transaction.
+
+### Standards-based IMS payload candidates
+
+The original generated SIP message used RFC documentation-only address blocks,
+omitted the RFC 3261 Via branch magic cookie and `Max-Forwards`, and advertised
+only PCMU. These are poor characteristics for an IMS/VoLTE-looking payload.
+
+The candidate generator now:
+
+- prefixes the Via branch with `z9hG4bK` and sends `Max-Forwards: 70`;
+- uses RFC 6598 shared address space instead of TEST-NET addresses;
+- recognizes SIP URIs under `.3gppnetwork.org` as IMS profiles;
+- advertises AMR and AMR-WB using RTP/AVP, `ptime:20`, and `maxptime:240`;
+- requests bandwidth-efficient AMR framing by deliberately omitting
+  `octet-align=1`;
+- includes the IR.92-style User-Agent, `Supported: 199, timer`, and
+  `Session-Expires: 1800` headers.
+
+The OpenWrt UCI/LuCI package exposes China Mobile `460-00`, China Unicom
+`460-01`, China Telecom/legacy CDMA `460-03`, all-three rotation, standard
+SIP, and a custom URI mode. 3GPP TS 23.003 requires two-digit MNCs to be
+left-padded in the domain, producing realms such as
+`ims.mnc000.mcc460.3gppnetwork.org`. GSMA IR.92 requires AMR and AMR-WB,
+RTP/AVP, RTP over UDP, and the stated packetization times.
+
+These profiles are standards-based test candidates, not evidence that an ISP
+has a SIP whitelist. Public DNS normally does not expose carrier-private IMS
+service addresses, and no private subscriber identity, credential, or vendor
+wire format is included. Their operational value must be decided by controlled
+A/B/A measurements before changing the production profile.
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`

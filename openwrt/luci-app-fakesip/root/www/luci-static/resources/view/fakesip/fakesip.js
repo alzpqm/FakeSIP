@@ -115,7 +115,7 @@ return view.extend({
 
 		o = s.taboption('advanced', form.Value, 'repeat', _('Fake packet repeats'));
 		o.datatype = 'range(1,10)';
-		o.placeholder = '2';
+		o.placeholder = '1';
 
 		o = s.taboption('advanced', form.Value, 'ttl', _('Fake packet TTL'));
 		o.datatype = 'range(1,255)';
@@ -141,9 +141,19 @@ return view.extend({
 		o.placeholder = '/tmp/fakesip.log';
 		o.rmempty = true;
 
+		o = s.taboption('payload', form.ListValue, 'sip_profile', _('SIP camouflage profile'));
+		o.value('standard', _('Standard SIP'));
+		o.value('china_mobile', _('China Mobile IMS'));
+		o.value('china_unicom', _('China Unicom IMS'));
+		o.value('china_telecom', _('China Telecom IMS'));
+		o.value('china_all', _('Rotate Chinese carrier IMS'));
+		o.value('custom', _('Custom SIP URI'));
+		o.default = 'china_all';
+
 		o = s.taboption('payload', form.DynamicList, 'sip_uri', _('SIP URI'));
 		o.placeholder = 'sip:10086@example.com';
 		o.rmempty = true;
+		o.depends('sip_profile', 'custom');
 
 		o = s.taboption('payload', form.DynamicList, 'payload_file', _('Payload file'));
 		o.placeholder = '/etc/fakesip/payload.bin';
