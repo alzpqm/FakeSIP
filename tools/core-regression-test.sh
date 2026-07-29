@@ -5,8 +5,14 @@ ROOT_DIR=$(cd "$(dirname "$0")/.." && pwd)
 WORK_DIR=${WORK_DIR:-/tmp/fakesip-core-regression}
 CC=${CC:-gcc}
 CFLAGS=${CFLAGS:--std=c99 -pedantic -Wall -Wextra -Werror}
+SKIP_CLI_TESTS=${SKIP_CLI_TESTS:-0}
 
 mkdir -p "$WORK_DIR"
+
+fail() {
+    printf 'FAIL: %s\n' "$*" >&2
+    exit 1
+}
 
 build_test() {
     name=$1
@@ -39,6 +45,16 @@ if [ "$(uname -s)" = Linux ]; then
 fi
 
 FAKESIP=${FAKESIP:-$ROOT_DIR/build/fakesip}
+case "$SKIP_CLI_TESTS" in
+    0) [ -x "$FAKESIP" ] ||
+        fail "FakeSIP binary is missing: $FAKESIP (build it first or set SKIP_CLI_TESTS=1)" ;;
+    1)
+        printf 'Core unit regression tests passed; CLI parser tests explicitly skipped.\n'
+        exit 0
+        ;;
+    *) fail "SKIP_CLI_TESTS must be 0 or 1" ;;
+esac
+
 if [ -x "$FAKESIP" ]; then
     assert_invalid() {
         set +e
