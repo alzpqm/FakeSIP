@@ -34,6 +34,10 @@ export STAGING_DIR="$SDK_DIR/staging_dir"
 [ -n "$TARGET_STAGING" ] || { echo "missing target staging dir in SDK" >&2; exit 1; }
 [ -x "$TARGET_CC" ] || { echo "missing target compiler in SDK" >&2; exit 1; }
 [ -x "$STRIP" ] || { echo "missing target strip in SDK" >&2; exit 1; }
+[ "$(id -u)" -eq 0 ] || {
+    echo "this direct APK builder must run as root to record root-owned files" >&2
+    exit 1
+}
 
 pkg_field() {
     awk -F:= -v key="$2" '$1 == key { print $2; exit }' "$1"
@@ -44,8 +48,34 @@ make_pkg_metadata() {
     pkgname=$2
 
     mkdir -p "$pkgroot/lib/apk/packages"
-    (cd "$pkgroot" && find . -type f | sed 's#^\./#/#' | sort) \
+    (cd "$pkgroot" && find . \( -type f -o -type l \) | \
+        sed 's#^\./#/#' | sort) \
         >"$pkgroot/lib/apk/packages/$pkgname.list"
+}
+
+make_default_scripts() {
+    scriptdir=$1
+    pkgname=$2
+
+    mkdir -p "$scriptdir"
+    cat >"$scriptdir/post-install" <<EOF
+#!/bin/sh
+[ "\${IPKG_NO_SCRIPT:-}" = "1" ] && exit 0
+[ -s "\${IPKG_INSTROOT:-}/lib/functions.sh" ] || exit 0
+. "\${IPKG_INSTROOT:-}/lib/functions.sh"
+export root="\${IPKG_INSTROOT:-}"
+export pkgname="$pkgname"
+default_postinst
+EOF
+    cat >"$scriptdir/pre-deinstall" <<EOF
+#!/bin/sh
+[ -s "\${IPKG_INSTROOT:-}/lib/functions.sh" ] || exit 0
+. "\${IPKG_INSTROOT:-}/lib/functions.sh"
+export root="\${IPKG_INSTROOT:-}"
+export pkgname="$pkgname"
+default_prerm
+EOF
+    chmod 0755 "$scriptdir/post-install" "$scriptdir/pre-deinstall"
 }
 
 make_conffile_metadata() {
@@ -67,6 +97,8 @@ LUCI_RELEASE=$(pkg_field "$ROOT_DIR/openwrt/luci-app-fakesip/Makefile" PKG_RELEA
 BUILD_DIR=${BUILD_DIR:-"/tmp/fakesip-openwrt-apk-build"}
 FAKESIP_ROOT="$BUILD_DIR/fakesip-root"
 LUCI_ROOT="$BUILD_DIR/luci-root"
+FAKESIP_SCRIPTS="$BUILD_DIR/fakesip-scripts"
+LUCI_SCRIPTS="$BUILD_DIR/luci-scripts"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$FAKESIP_ROOT/usr/bin" "$FAKESIP_ROOT/etc/config" \
@@ -89,6 +121,8 @@ find "$FAKESIP_ROOT" \( -name '._*' -o -name '.DS_Store' \) -exec rm -rf {} +
 
 make_conffile_metadata "$FAKESIP_ROOT" fakesip /etc/config/fakesip
 make_pkg_metadata "$FAKESIP_ROOT" fakesip
+make_default_scripts "$FAKESIP_SCRIPTS" fakesip
+chown -R 0:0 "$FAKESIP_ROOT"
 
 "$APK" mkpkg \
     --info "name:fakesip" \
@@ -101,12 +135,16 @@ make_pkg_metadata "$FAKESIP_ROOT" fakesip
     --info "maintainer:MikeWang000000" \
     --info "provides:fakesip-any" \
     --info "depends:libc libnetfilter-queue1 libnfnetlink0 libmnl0" \
+    --script "post-install:$FAKESIP_SCRIPTS/post-install" \
+    --script "pre-deinstall:$FAKESIP_SCRIPTS/pre-deinstall" \
     --files "$FAKESIP_ROOT" \
     --output "$OUT_DIR/fakesip-$FAKESIP_VERSION-r$FAKESIP_RELEASE.apk"
 
 cp -Rp "$ROOT_DIR/openwrt/luci-app-fakesip/root/." "$LUCI_ROOT/"
 find "$LUCI_ROOT" \( -name '._*' -o -name '.DS_Store' \) -exec rm -rf {} +
 make_pkg_metadata "$LUCI_ROOT" luci-app-fakesip
+make_default_scripts "$LUCI_SCRIPTS" luci-app-fakesip
+chown -R 0:0 "$LUCI_ROOT"
 
 "$APK" mkpkg \
     --info "name:luci-app-fakesip" \
@@ -118,6 +156,8 @@ make_pkg_metadata "$LUCI_ROOT" luci-app-fakesip
     --info "url:https://github.com/MikeWang000000/FakeSIP" \
     --info "maintainer:MikeWang000000" \
     --info "depends:fakesip" \
+    --script "post-install:$LUCI_SCRIPTS/post-install" \
+    --script "pre-deinstall:$LUCI_SCRIPTS/pre-deinstall" \
     --files "$LUCI_ROOT" \
     --output "$OUT_DIR/luci-app-fakesip-$LUCI_VERSION-r$LUCI_RELEASE.apk"
 

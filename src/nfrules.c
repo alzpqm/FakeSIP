@@ -58,7 +58,7 @@ int fs_nfrules_setup(void)
             res = fs_ipt4_setup();
             if (res < 0) {
                 E(T(fs_ipt4_setup));
-                return -1;
+                goto rollback;
             }
         }
 
@@ -66,7 +66,7 @@ int fs_nfrules_setup(void)
             res = fs_ipt6_setup();
             if (res < 0) {
                 E(T(fs_ipt6_setup));
-                return -1;
+                goto rollback;
             }
         }
     } else {
@@ -74,7 +74,7 @@ int fs_nfrules_setup(void)
             res = fs_nft4_setup();
             if (res < 0) {
                 E(T(fs_nft4_setup));
-                return -1;
+                goto rollback;
             }
         }
 
@@ -82,12 +82,17 @@ int fs_nfrules_setup(void)
             res = fs_nft6_setup();
             if (res < 0) {
                 E(T(fs_nft6_setup));
-                return -1;
+                goto rollback;
             }
         }
     }
 
     return 0;
+
+rollback:
+    /* Setup functions can fail after installing only part of their ruleset. */
+    fs_nfrules_cleanup();
+    return -1;
 }
 
 

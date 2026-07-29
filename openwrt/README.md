@@ -69,8 +69,10 @@ opkg install /tmp/luci-app-fakesip_*.ipk
 The default config is disabled so installation never changes traffic by
 surprise. Enable it and point it at your WAN network:
 
-In LuCI, open **Services > FakeSIP**, enable the `main` configuration, set the WAN
-network or Linux interface, save/apply, then use the Start or Restart button.
+In LuCI, open **Services > FakeSIP**, enable the `main` configuration, select the
+WAN network or Linux device, then use **Save & Apply**. The registered procd
+reload trigger applies configuration changes automatically; the service buttons
+are for explicit start, stop, or recovery operations.
 
 The same setup from SSH is:
 

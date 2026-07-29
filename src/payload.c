@@ -30,6 +30,7 @@
 #include "globvar.h"
 
 #define BUFFLEN 1200
+#define SIP_URI_MAXLEN 120
 #define SET_BE16(a, u16)         \
     do {                         \
         (a)[0] = (u16) >> (8);   \
@@ -127,9 +128,11 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
     }
 
     if (sip_uri) {
-        if (strncmp("sip:", sip_uri, 4) != 0) {
-            E("ERROR: Invalid SIP URI (should start with `sip:`): %s",
-              sip_uri);
+        if (strncmp("sip:", sip_uri, 4) != 0 || sip_uri[4] == '\0' ||
+            strpbrk(sip_uri, " \t\r\n\f\v") != NULL ||
+            strlen(sip_uri) > SIP_URI_MAXLEN) {
+            E("ERROR: Invalid SIP URI (use sip:, no whitespace, max %d bytes): %s",
+              SIP_URI_MAXLEN, sip_uri);
             return -1;
         }
     } else {

@@ -25,6 +25,18 @@ build_test test_srcinfo \
 build_test test_process \
     "$ROOT_DIR/src/process.c" "$ROOT_DIR/src/globvar.c" \
     "$ROOT_DIR/src/logging.c"
+build_test test_nfrules \
+    "$ROOT_DIR/src/nfrules.c" "$ROOT_DIR/src/globvar.c" \
+    "$ROOT_DIR/src/logging.c"
+
+if [ "$(uname -s)" = Linux ]; then
+    "$CC" $CFLAGS -ffunction-sections -fdata-sections \
+        -I"$ROOT_DIR/include" "$ROOT_DIR/tests/test_rawsend.c" \
+        "$ROOT_DIR/src/globvar.c" "$ROOT_DIR/src/logging.c" \
+        -Wl,--gc-sections -lnetfilter_queue -lnfnetlink -lmnl \
+        -o "$WORK_DIR/test_rawsend"
+    "$WORK_DIR/test_rawsend"
+fi
 
 FAKESIP=${FAKESIP:-$ROOT_DIR/build/fakesip}
 if [ -x "$FAKESIP" ]; then
@@ -54,6 +66,23 @@ if [ -x "$FAKESIP" ]; then
     assert_invalid -t +3
     assert_invalid -x 0x10000junk
     assert_invalid -y " 50"
+
+    set +e
+    output=$($FAKESIP -a -f -n 018 -m invalid 2>&1)
+    status=$?
+    set -e
+    [ "$status" -ne 0 ] || {
+        printf 'FAIL: decimal leading-zero queue test unexpectedly started\n' >&2
+        exit 1
+    }
+    case $output in
+        *"invalid value for -m"*) ;;
+        *)
+            printf 'FAIL: leading-zero decimal was not fully parsed: %s\n' \
+                "$output" >&2
+            exit 1
+            ;;
+    esac
 fi
 
 printf 'Core regression tests passed.\n'

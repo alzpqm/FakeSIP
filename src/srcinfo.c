@@ -33,6 +33,7 @@
 
 struct srcinfo {
     int initialized;
+    unsigned int ifindex;
     uint8_t ttl;
     uint8_t hwaddr[8];
     struct sockaddr_storage addr;
@@ -99,12 +100,14 @@ void fs_srcinfo_cleanup(void)
 }
 
 
-int fs_srcinfo_put(const struct sockaddr *addr, uint8_t ttl,
+int fs_srcinfo_put(const struct sockaddr *addr, unsigned int ifindex,
+                   uint8_t ttl,
                    const uint8_t hwaddr[8])
 {
     struct srcinfo *info;
 
-    if (!srci || !addr || !hwaddr || srci_end >= SRCINFO_CAPACITY) {
+    if (!srci || !addr || !ifindex || !hwaddr ||
+        srci_end >= SRCINFO_CAPACITY) {
         E("ERROR: fs_srcinfo_put(): %s", "invalid cache state or argument");
         return -1;
     }
@@ -121,6 +124,7 @@ int fs_srcinfo_put(const struct sockaddr *addr, uint8_t ttl,
         return -1;
     }
 
+    info->ifindex = ifindex;
     info->ttl = ttl;
     memcpy(info->hwaddr, hwaddr, sizeof(info->hwaddr));
     info->initialized = 1;
@@ -135,13 +139,14 @@ int fs_srcinfo_put(const struct sockaddr *addr, uint8_t ttl,
 }
 
 
-int fs_srcinfo_get(const struct sockaddr *addr, uint8_t *ttl,
+int fs_srcinfo_get(const struct sockaddr *addr, unsigned int ifindex,
+                   uint8_t *ttl,
                    uint8_t hwaddr[8])
 {
     size_t i, index;
     struct srcinfo *info;
 
-    if (!srci || !addr || !ttl || !hwaddr ||
+    if (!srci || !addr || !ifindex || !ttl || !hwaddr ||
         srci_end >= SRCINFO_CAPACITY || srci_count > SRCINFO_CAPACITY) {
         E("ERROR: fs_srcinfo_get(): %s", "invalid cache state or argument");
         return -1;
@@ -155,7 +160,7 @@ int fs_srcinfo_get(const struct sockaddr *addr, uint8_t *ttl,
     for (i = 0; i < srci_count; i++) {
         index = (srci_end + SRCINFO_CAPACITY - i - 1) % SRCINFO_CAPACITY;
         info = &srci[index];
-        if (info->initialized &&
+        if (info->initialized && info->ifindex == ifindex &&
             sameip(addr, (const struct sockaddr *) &info->addr)) {
             *ttl = info->ttl;
             memcpy(hwaddr, info->hwaddr, sizeof(info->hwaddr));

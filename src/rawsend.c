@@ -183,7 +183,7 @@ static int sendto_snat(struct sockaddr_ll *sll, struct sockaddr *daddr,
     }
 
     nbytes = sendto(fd, pkt_buff, pkt_len, 0, daddr, daddrlen);
-    if (nbytes < 0 && errno != EPERM) {
+    if (nbytes < 0) {
         E("ERROR: sendto(): %s", strerror(errno));
         return -1;
     }
@@ -380,7 +380,8 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
         */
         sll->sll_pkttype = 0;
 
-        res = fs_srcinfo_put(saddr, src_ttl, sll->sll_addr);
+        res = fs_srcinfo_put(saddr, (unsigned int) sll->sll_ifindex, src_ttl,
+                             sll->sll_addr);
         if (res < 0) {
             E(T(fs_srcinfo_put));
         }
@@ -430,7 +431,9 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
         */
         sll->sll_pkttype = 0;
 
-        srcinfo_unavail = fs_srcinfo_get(daddr, &src_ttl, sll->sll_addr);
+        srcinfo_unavail = fs_srcinfo_get(daddr,
+                                         (unsigned int) sll->sll_ifindex,
+                                         &src_ttl, sll->sll_addr);
         if (srcinfo_unavail) {
             src_ttl = 0;
             memset(&sll->sll_addr, 0, sizeof(sll->sll_addr));

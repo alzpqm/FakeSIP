@@ -74,12 +74,13 @@ append_sip_payloads() {
 			procd_append_param command -u \
 				'sip:user@ims.mnc003.mcc460.3gppnetwork.org'
 			;;
-		standard|custom|'')
+		custom)
 			config_list_foreach "$section" sip_uri append_list_arg -u
+			;;
+		standard|'')
 			;;
 		*)
 			logger -t fakesip "unknown SIP profile '$profile'"
-			config_list_foreach "$section" sip_uri append_list_arg -u
 			;;
 	esac
 }
@@ -88,13 +89,18 @@ append_interface_arg() {
 	local device="$1"
 
 	[ -n "$device" ] || return 0
+	case "$device" in
+		*[!A-Za-z0-9_.-]*|????????????????*)
+			logger -t fakesip "invalid interface '$device'"
+			return 0
+			;;
+	esac
 
 	case " $FS_IFACES_ADDED " in
 		*" $device "*) return 0 ;;
 	esac
 
 	FS_IFACES_ADDED="$FS_IFACES_ADDED $device"
-	procd_append_param command -i "$device"
 }
 
 append_network_arg() {
@@ -124,11 +130,34 @@ has_list_values() {
 
 start_instance() {
 	local section="$1"
-	local enabled all_interfaces log_file
+	local enabled all_interfaces device log_file
+	local inbound outbound ipv4 ipv6 sip_profile
 	FS_IFACES_ADDED=
 
 	config_get_bool enabled "$section" enabled 0
 	[ "$enabled" -eq 1 ] || return 0
+
+	config_get_bool inbound "$section" inbound 0
+	config_get_bool outbound "$section" outbound 1
+	if [ "$inbound" -ne 1 ] && [ "$outbound" -ne 1 ]; then
+		logger -t fakesip "section '$section' has no enabled traffic direction"
+		return 0
+	fi
+
+	config_get_bool ipv4 "$section" ipv4 1
+	config_get_bool ipv6 "$section" ipv6 1
+	if [ "$ipv4" -ne 1 ] && [ "$ipv6" -ne 1 ]; then
+		logger -t fakesip "section '$section' has no enabled IP family"
+		return 0
+	fi
+
+	config_get sip_profile "$section" sip_profile standard
+	if [ "$sip_profile" = custom ] &&
+	   ! has_list_values "$section" sip_uri; then
+		logger -t fakesip "section '$section' custom SIP profile has no URI"
+		return 0
+	fi
+
 	config_get_bool all_interfaces "$section" all_interfaces 0
 
 	if [ "$all_interfaces" -ne 1 ] &&
@@ -136,6 +165,15 @@ start_instance() {
 	   ! has_list_values "$section" interface; then
 		logger -t fakesip "section '$section' has no network or interface"
 		return 0
+	fi
+
+	if [ "$all_interfaces" -ne 1 ]; then
+		config_list_foreach "$section" network append_network_arg
+		config_list_foreach "$section" interface append_interface_arg
+		if [ -z "$FS_IFACES_ADDED" ]; then
+			logger -t fakesip "section '$section' has no usable interface"
+			return 0
+		fi
 	fi
 
 	procd_open_instance "$section"
@@ -163,8 +201,9 @@ start_instance() {
 	if [ "$all_interfaces" -eq 1 ]; then
 		procd_append_param command -a
 	else
-		config_list_foreach "$section" network append_network_arg
-		config_list_foreach "$section" interface append_interface_arg
+		for device in $FS_IFACES_ADDED; do
+			procd_append_param command -i "$device"
+		done
 	fi
 
 	config_get log_file "$section" log_file

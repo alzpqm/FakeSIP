@@ -101,6 +101,7 @@ static int is_ascii_space(char value)
 static int parse_ull(const char *value, unsigned long long *result)
 {
     unsigned long long parsed;
+    int base;
     char *end;
 
     if (!value || !result || !value[0] || value[0] == '+' ||
@@ -108,9 +109,10 @@ static int parse_ull(const char *value, unsigned long long *result)
         return -1;
     }
 
+    base = value[0] == '0' && (value[1] == 'x' || value[1] == 'X') ? 16 : 10;
     errno = 0;
     end = NULL;
-    parsed = strtoull(value, &end, 0);
+    parsed = strtoull(value, &end, base);
     if (errno == ERANGE || end == value || !end || *end != '\0') {
         return -1;
     }
@@ -403,10 +405,6 @@ int main(int argc, char *argv[])
                     strerror(errno));
             goto free_mem;
         }
-
-        if (g_ctx.logfp == stderr) {
-            g_ctx.silent = 1;
-        }
     }
 
     srand(time(NULL));
@@ -415,6 +413,10 @@ int main(int argc, char *argv[])
     if (res < 0) {
         EE(T(fs_logger_setup));
         goto free_mem;
+    }
+
+    if (g_ctx.daemon && g_ctx.logfp == stderr) {
+        g_ctx.silent = 1;
     }
 
     E("FakeSIP version " VERSION);

@@ -10,6 +10,7 @@
 #include "payload.h"
 
 #define CUSTOM_PAYLOAD_SIZE 1200U
+#define SIP_URI_MAXLEN 120U
 
 static int fail(const char *message)
 {
@@ -60,6 +61,19 @@ static int content_length_matches(const uint8_t *payload, size_t payload_len)
     return declared_length == payload_len - (size_t) (body + 4 - text);
 }
 
+static void fill_ims_uri(char *buffer, size_t uri_len)
+{
+    static const char prefix[] = "sip:";
+    static const char suffix[] = "@ims.mnc000.mcc460.3gppnetwork.org";
+
+    memcpy(buffer, prefix, sizeof(prefix) - 1);
+    memset(buffer + sizeof(prefix) - 1, 'a',
+           uri_len - (sizeof(prefix) - 1) - (sizeof(suffix) - 1));
+    memcpy(buffer + uri_len - (sizeof(suffix) - 1), suffix,
+           sizeof(suffix) - 1);
+    buffer[uri_len] = '\0';
+}
+
 int main(void)
 {
     struct payload_info sip_payloads[] = {
@@ -75,8 +89,14 @@ int main(void)
         {FS_PAYLOAD_CUSTOM, NULL},
         {FS_PAYLOAD_END, NULL},
     };
+    struct payload_info boundary_payloads[] = {
+        {FS_PAYLOAD_SIP, NULL},
+        {FS_PAYLOAD_END, NULL},
+    };
     uint8_t expected[CUSTOM_PAYLOAD_SIZE], *payload;
     size_t payload_len;
+    char max_sip_uri[SIP_URI_MAXLEN + 1];
+    char long_sip_uri[SIP_URI_MAXLEN + 2];
     char path[] = "/tmp/fakesip-payload-test.XXXXXX";
     int fd;
 
@@ -132,6 +152,22 @@ int main(void)
         return fail("IMS SIP payload format is invalid");
     }
     fs_payload_cleanup();
+
+    fill_ims_uri(max_sip_uri, SIP_URI_MAXLEN);
+    boundary_payloads[0].info = max_sip_uri;
+    g_ctx.plinfo = boundary_payloads;
+    if (fs_payload_setup() < 0 ||
+        th_payload_get(&payload, &payload_len) < 0 || !payload || !payload_len) {
+        return fail("maximum-length SIP URI was rejected");
+    }
+    fs_payload_cleanup();
+
+    fill_ims_uri(long_sip_uri, SIP_URI_MAXLEN + 1);
+    boundary_payloads[0].info = long_sip_uri;
+    if (fs_payload_setup() == 0) {
+        fs_payload_cleanup();
+        return fail("overlength SIP URI was accepted");
+    }
 
     memset(expected, 0x5a, sizeof(expected));
     fd = mkstemp(path);
