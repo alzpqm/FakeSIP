@@ -714,6 +714,73 @@ The local release backup is retained under:
 /Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r15-release-20260729-103704/
 ```
 
+#### OpenWrt r16 WAN-selection and LuCI consistency deployment
+
+OpenWrt r16 makes an OpenWrt logical network the recommended WAN selection.
+The init script resolves each selected network through `network_get_device()`
+at service start, then passes the resulting Linux device to FakeSIP. This keeps
+the daemon attached to the real PPPoE device while allowing procd logical-
+network triggers to reload it after a reconnect. Direct Linux-device mode
+remains available for unusual layouts without a usable logical network. Old
+network-only, device-only, and mixed configurations remain compatible; only
+the selected explicit mode is active after a user chooses one.
+
+LuCI now presents a single WAN-selection mode and only the corresponding
+selector. It infers device mode for an old device-only configuration, while the
+explicit legacy-combined mode preserves old mixed configurations. Service
+controls exactly match FakeHTTP in order and style: Start/positive,
+Restart/apply, Stop/negative. Static tests lock the control order, CSS classes,
+mode inference, hidden-value isolation, init startup behavior, and reconnect
+triggers.
+
+The source passed the macOS LuCI/init/package tests, two local-model adversarial
+reviews, Debian 13 ASan/UBSan and CLI regression tests, GCC `-fanalyzer`, the
+Debian namespace smoke test, and an OpenWrt 25.12.5 x86_64/musl SDK build. The
+candidate artifacts installed with OpenWrt 25 `apk add` were:
+
+```text
+fakesip-0.9.1-r16.apk
+sha256: 14271394e3208e8e489150da5be04973781fcc979d4a62ac1fe93e50cea7b7b5
+
+luci-app-fakesip-1.0.0-r10.apk
+sha256: e4d3aeb88cadc5c48639b8274e639dcdb2c2b6fcd17557dadcc5c3fcdaa50349
+```
+
+The live router first restarted its old device-only UCI configuration without
+changing the three `-i` arguments. It was then migrated to logical networks
+`wan2`, `wancm`, and `wanct`. The router resolved these respectively to
+`pppoe-wan2`, `pppoe-wancm`, and `pppoe-wanct`; the post-migration command line
+contained those same three devices. A real LuCI Restart changed the PID to
+20433 and reported Running. Queue 513 showed zero backlog, kernel drops, and
+userspace drops. During a subsequent 60-second window the PID stayed constant,
+the queue packet id advanced from 768 to 1576, and the error count remained
+zero.
+
+Desktop and 390-pixel LuCI checks confirmed the old configuration inferred
+device mode, each standard mode displayed only its active selector, legacy
+combined displayed both selectors, the logical-network badges exposed their
+resolved PPPoE devices, and no controls overflowed or overlapped.
+
+The pre-upgrade rollback archive is retained on the router and locally:
+
+```text
+/root/fakesip-backup-r16-pre-20260729-070206.tgz
+sha256: 3790841fc73f93ed13d0482f585386d0596404b068cf84fa40b0de53a6df6f15
+```
+
+The post-migration formal-state archive is likewise retained in both places:
+
+```text
+/root/fakesip-r16-final-20260729-071524.tgz
+sha256: baec17e6a7ddc36a2fe4f75f25956998f7f3fc21fd19329888dc6b07686f015d
+```
+
+The local APK and router archives are under:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r16-candidate-20260729-150049/
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`

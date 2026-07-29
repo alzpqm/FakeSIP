@@ -21,6 +21,7 @@ const helpers = Function('_', source.slice(helperStart, helperEnd) + '\n' +
 		'STATUS_RUNNING: STATUS_RUNNING,' +
 		'STATUS_STOPPED: STATUS_STOPPED,' +
 		'STATUS_UNKNOWN: STATUS_UNKNOWN,' +
+		'effectiveInterfaceMode: effectiveInterfaceMode,' +
 		'utf8ByteLength: utf8ByteLength,' +
 		'parseServiceStatus: parseServiceStatus,' +
 		'parseUint32: parseUint32,' +
@@ -37,6 +38,7 @@ const {
 	STATUS_RUNNING,
 	STATUS_STOPPED,
 	STATUS_UNKNOWN,
+	effectiveInterfaceMode,
 	utf8ByteLength,
 	parseServiceStatus,
 	parseUint32,
@@ -76,6 +78,19 @@ assert(parseServiceStatus({ code: 0, stdout: 'active with no instances\n' }).sta
 assert(parseServiceStatus({ code: 0, stdout: '' }).state === STATUS_UNKNOWN,
 	'ambiguous status must remain unknown');
 
+assert(effectiveInterfaceMode('network', [], [ 'pppoe-wan' ]) === 'network',
+	'an explicit network mode was not preserved');
+assert(effectiveInterfaceMode('device', [ 'wan' ], []) === 'device',
+	'an explicit device mode was not preserved');
+assert(effectiveInterfaceMode('auto', [ 'wan' ], [ 'pppoe-wan' ]) === 'auto',
+	'an explicit legacy-combined mode was not preserved');
+assert(effectiveInterfaceMode(undefined, [ 'wan' ], [ 'pppoe-wan' ]) === 'auto',
+	'a mixed legacy configuration did not preserve combined mode');
+assert(effectiveInterfaceMode(undefined, [], [ 'pppoe-wan' ]) === 'device',
+	'a legacy device-only configuration did not infer device mode');
+assert(effectiveInterfaceMode(undefined, [], []) === 'network',
+	'an empty configuration did not default to network mode');
+
 assert(parseUint32('1') === 1, 'decimal uint32 parsing failed');
 assert(parseUint32('0x10000') === 65536, 'hexadecimal uint32 parsing failed');
 assert(parseUint32('010') === 10, 'leading-zero decimal parsing failed');
@@ -91,14 +106,26 @@ assert(validateFirewallMask.call(context({ fwmark: '0x10001' }), 'main', '0x1000
 	'a firewall mark outside the mask was accepted');
 
 assert(validateEnabledTargets.call(context({
-	all_interfaces: '0', network: [], interface: []
+	all_interfaces: '0', interface_mode: 'network', network: [], interface: []
 }), 'main', '1') !== true, 'enabled service without targets was accepted');
 assert(validateEnabledTargets.call(context({
-	all_interfaces: '1', network: [], interface: []
+	all_interfaces: '1', interface_mode: 'network', network: [], interface: []
 }), 'main', '1') === true, 'all-interface mode was rejected');
 assert(validateEnabledTargets.call(context({
-	all_interfaces: '0', network: [ 'wan' ], interface: []
+	all_interfaces: '0', interface_mode: 'network', network: [ 'wan' ], interface: []
 }), 'main', '1') === true, 'selected logical network was rejected');
+assert(validateEnabledTargets.call(context({
+	all_interfaces: '0', interface_mode: 'network', network: [], interface: [ 'pppoe-wan' ]
+}), 'main', '1') !== true, 'network mode accepted only a retained Linux device');
+assert(validateEnabledTargets.call(context({
+	all_interfaces: '0', interface_mode: 'device', network: [ 'wan' ], interface: []
+}), 'main', '1') !== true, 'device mode accepted only a retained OpenWrt network');
+assert(validateEnabledTargets.call(context({
+	all_interfaces: '0', interface_mode: 'device', network: [], interface: [ 'pppoe-wan' ]
+}), 'main', '1') === true, 'selected Linux device was rejected');
+assert(validateEnabledTargets.call(context({
+	all_interfaces: '0', interface_mode: 'auto', network: [ 'wan' ], interface: [ 'pppoe-wan' ]
+}), 'main', '1') === true, 'legacy combined targets were rejected');
 
 assert(validateRequiredPair.call(context({ outbound: '0' }),
 	'main', '0', 'outbound', 'missing') !== true,
@@ -142,6 +169,26 @@ assert(validateHopSettings.call(context({ dynamic_pct: '10' }), 'main', '1') !==
 	'dynamic TTL with disabled hop estimation was accepted');
 assert(validateHopSettings.call(context({ dynamic_pct: '0' }), 'main', '1') === true,
 	'valid hop settings were rejected');
+
+const startButton = source.indexOf("this.actionButton(_('Start')");
+const restartButton = source.indexOf("this.actionButton(_('Restart')");
+const stopButton = source.indexOf("this.actionButton(_('Stop')");
+assert(startButton >= 0 && startButton < restartButton && restartButton < stopButton,
+	'service buttons must be ordered Start, Restart, Stop');
+assert(/this\.actionButton\(_\('Start'\), _\('Start FakeSIP'\),\s*'start', 'cbi-button-positive'\)/.test(source),
+	'Start button does not match the FakeHTTP positive style');
+assert(/this\.actionButton\(_\('Restart'\), _\('Restart FakeSIP'\),\s*'restart', 'cbi-button-apply'\)/.test(source),
+	'Restart button does not match the FakeHTTP apply style');
+assert(/this\.actionButton\(_\('Stop'\), _\('Stop FakeSIP'\),\s*'stop', 'cbi-button-negative'\)/.test(source),
+	'Stop button does not match the FakeHTTP negative style');
+assert(source.indexOf("form.ListValue, 'interface_mode'") >= 0,
+	'WAN selection mode is missing from LuCI');
+assert(source.indexOf("interface_mode: 'network'") >= 0,
+	'OpenWrt network selection is not tied to network mode');
+assert(source.indexOf("interface_mode: 'device'") >= 0,
+	'Linux device selection is not tied to device mode');
+assert(source.indexOf("modeOption.value('auto', _('Legacy combined'))") >= 0,
+	'legacy mixed configurations cannot be represented honestly');
 
 const acl = JSON.parse(fs.readFileSync(aclPath, 'utf8'))['luci-app-fakesip'];
 const readCommands = Object.keys(acl.read.file || {});

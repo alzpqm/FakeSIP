@@ -130,7 +130,7 @@ has_list_values() {
 
 start_instance() {
 	local section="$1"
-	local enabled all_interfaces device log_file
+	local enabled all_interfaces interface_mode device log_file
 	local inbound outbound ipv4 ipv6 sip_profile
 	FS_IFACES_ADDED=
 
@@ -159,17 +159,39 @@ start_instance() {
 	fi
 
 	config_get_bool all_interfaces "$section" all_interfaces 0
-
-	if [ "$all_interfaces" -ne 1 ] &&
-	   ! has_list_values "$section" network &&
-	   ! has_list_values "$section" interface; then
-		logger -t fakesip "section '$section' has no network or interface"
-		return 0
-	fi
+	config_get interface_mode "$section" interface_mode auto
 
 	if [ "$all_interfaces" -ne 1 ]; then
-		config_list_foreach "$section" network append_network_arg
-		config_list_foreach "$section" interface append_interface_arg
+		case "$interface_mode" in
+			network)
+				if ! has_list_values "$section" network; then
+					logger -t fakesip "section '$section' has no OpenWrt network"
+					return 0
+				fi
+				config_list_foreach "$section" network append_network_arg
+				;;
+			device)
+				if ! has_list_values "$section" interface; then
+					logger -t fakesip "section '$section' has no Linux device"
+					return 0
+				fi
+				config_list_foreach "$section" interface append_interface_arg
+				;;
+			auto|'')
+				if ! has_list_values "$section" network &&
+				   ! has_list_values "$section" interface; then
+					logger -t fakesip "section '$section' has no network or interface"
+					return 0
+				fi
+				config_list_foreach "$section" network append_network_arg
+				config_list_foreach "$section" interface append_interface_arg
+				;;
+			*)
+				logger -t fakesip "section '$section' has invalid interface mode '$interface_mode'"
+				return 0
+				;;
+		esac
+
 		if [ -z "$FS_IFACES_ADDED" ]; then
 			logger -t fakesip "section '$section' has no usable interface"
 			return 0
@@ -231,8 +253,14 @@ add_network_trigger() {
 
 add_instance_triggers() {
 	local section="$1"
+	local interface_mode
 
-	config_list_foreach "$section" network add_network_trigger
+	config_get interface_mode "$section" interface_mode auto
+	case "$interface_mode" in
+		network|auto|'')
+			config_list_foreach "$section" network add_network_trigger
+			;;
+	esac
 }
 
 service_triggers() {
