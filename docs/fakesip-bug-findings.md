@@ -656,6 +656,64 @@ stored under:
 /Users/sirtungshenghsiao/Documents/fakesip-backups/ims-r14-20260726-072516Z/
 ```
 
+#### OpenWrt r15 reliability and LuCI deployment
+
+OpenWrt r15 keeps the r14 three-carrier IMS payload and traffic policy, while
+hardening failure handling and the ordinary-user control path. Runtime changes
+roll back partially installed nft/iptables rules, report every failed raw
+`sendto()`, key the source cache by remote address plus interface index, validate
+SIP URI size and syntax, and parse only an explicit `0x` prefix as hexadecimal.
+The procd script now rejects empty direction/family selections, validates and
+deduplicates configured interfaces before opening an instance, and only passes
+custom SIP URIs for the custom profile.
+
+`luci-app-fakesip-1.0.0-r9` adds live status polling, verified and serialized
+service controls, network/device selectors, frontend validation matching the C
+parser, and clear Running/Stopped feedback. Desktop and 390-pixel mobile LuCI
+tests covered Start, Stop, Restart, custom URI validation, Reset, and automatic
+success-notification removal. The UCI file remained byte-identical throughout.
+
+The final source passed the core regression suite, ASan/UBSan, GCC `-fanalyzer`,
+the OpenWrt init/LuCI/package tests, the Linux raw-send EPERM test, and a real
+network-namespace nft partial-setup rollback test. It was then cross-compiled
+with the OpenWrt 25.12.5 x86_64/musl SDK. APK metadata inspection confirmed
+root ownership, dependency metadata, conffile tracking, and install/removal
+scripts. The release artifacts are:
+
+```text
+fakesip-0.9.1-r15.apk
+sha256: 40c160098ebd0c4cac9bd9faa8ea498fac40584528949be9e0e1317542cc0f90
+
+luci-app-fakesip-1.0.0-r9.apk
+sha256: a2a8d5ee460a91ffd4a886144bbe27b1e950d19100f00799c5d02d348b54ad00
+```
+
+The same APKs were force-reinstalled on OpenWrt and their installed binary,
+init, and LuCI hashes matched the package metadata. The final service used PID
+22280 with silent mode, repeat 1, TTL 3, IPv4 plus IPv6, three carrier IMS URIs,
+and the three PPP WAN devices. Queue 513 showed zero backlog, kernel drops, and
+userspace drops. A 60-second health window kept one thread and seven file
+descriptors, with RSS 864-872 KiB and zero errors/drops on all three WAN devices.
+
+For a mainland connectivity check, AliDNS `223.5.5.5` resolved the Tsinghua
+TUNA mirror to `101.6.15.130`. Three Debian wired-host IPv4 downloads each
+completed the requested 64 MiB; their rates were 185.5, 247.1, and 138.2 Mbps
+(median 185.5 Mbps). The variance is not evidence of ISP prioritization, but the
+complete transfers and zero queue drops show no r15 download failure.
+
+The pre-install router backup is retained at:
+
+```text
+/root/fakesip-backup-r15-preinstall-20260729-0238/
+files-r14.tgz sha256: 312bd2f48a1e0b2f0d839c90992b917306053a308803c3c09d49f9858329538e
+```
+
+The local release backup is retained under:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r15-release-20260729-103704/
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`
