@@ -39,6 +39,9 @@ section "Build"
 run make -C "$ROOT_DIR" clean
 run make -C "$ROOT_DIR" DEBUG=1
 
+section "Core Regression Tests"
+run "$ROOT_DIR/tools/core-regression-test.sh"
+
 section "Static Bug Probes"
 awk '
     /udph->len = htons\(udp_payload_size\)/ {

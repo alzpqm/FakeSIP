@@ -86,9 +86,11 @@ int fs_kill_running(int signal)
 {
     int res, matched, err;
     ssize_t len;
+    unsigned long long parsed_pid;
     DIR *procfs;
     struct dirent *entry;
     pid_t pid, self_pid;
+    char *end;
     char self_path[PATH_MAX], proc_path[PATH_MAX], exe_path[PATH_MAX];
 
     self_pid = getpid();
@@ -108,8 +110,16 @@ int fs_kill_running(int signal)
 
     matched = err = 0;
     while ((entry = readdir(procfs))) {
-        pid = strtoull(entry->d_name, NULL, 0);
-        if (pid <= 1 || pid == self_pid) {
+        errno = 0;
+        end = NULL;
+        parsed_pid = strtoull(entry->d_name, &end, 10);
+        if (errno == ERANGE || end == entry->d_name || !end || *end != '\0' ||
+            parsed_pid <= 1 || parsed_pid > INT_MAX) {
+            continue;
+        }
+
+        pid = (pid_t) parsed_pid;
+        if (pid == self_pid) {
             continue;
         }
 
@@ -120,7 +130,7 @@ int fs_kill_running(int signal)
         }
 
         len = readlink(exe_path, proc_path, sizeof(proc_path));
-        if (len < 0 || (size_t) len >= sizeof(self_path)) {
+        if (len < 0 || (size_t) len >= sizeof(proc_path)) {
             continue;
         }
         proc_path[len] = 0;

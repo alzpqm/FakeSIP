@@ -38,6 +38,6 @@ int fs_payload_setup(void);
 
 void fs_payload_cleanup(void);
 
-void th_payload_get(uint8_t **payload_ptr, size_t *payload_len);
+int th_payload_get(uint8_t **payload_ptr, size_t *payload_len);
 
 #endif /* FS_PAYLOAD_H */

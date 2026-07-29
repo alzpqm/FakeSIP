@@ -476,6 +476,244 @@ ICMP error and drops only matching FakeSIP replies. Normal MTR replies pass. The
 iptables fallback no longer installs a broad time-exceeded drop rule. This fix
 is packaged in OpenWrt r12.
 
+### Long-Running Process Robustness
+
+A follow-up audit found several defensive and recovery gaps:
+
+- `th_payload_get()` dereferenced its output pointers and the current payload
+  node without validation.
+- signal handlers wrote an ordinary `int` instead of a volatile
+  `sig_atomic_t` flag.
+- numeric options and `/proc` PID names were accepted without checking
+  `strtoull()` overflow or trailing characters.
+- the source-info ring relied on implicit initialization markers instead of an
+  explicit valid-entry count and argument/index guards.
+- recoverable NFQUEUE receive errors counted toward process termination.
+- command pipe write, close, and interrupted `waitpid()` failures could be
+  hidden by a successful child exit.
+
+The fixes add explicit API failures, strict parsing, bounded cache accounting,
+capped NFQUEUE backoff, pipe error propagation, and early SIGPIPE handling. The
+same change also accepts an exact 1200-byte custom payload, avoids direct
+`realloc()` assignment, and replaces the payload random-number multiplication
+with width-aware composition. These fixes are packaged in OpenWrt r13.
+
+Run the focused regression tests with:
+
+```sh
+make DEBUG=1
+./tools/core-regression-test.sh
+```
+
+### Download Asymmetry Under High UDP Load
+
+On 2026-07-26, the production-style OpenWrt r13 process was tested after users
+reported normal uploads but slow downloads. FakeHTTP was held stable for the
+valid test window: queue 512 kept PID 16550 and an unchanged nftables ruleset
+hash, with no queue backlog or drops. Results collected while either service
+was being reloaded before that window were discarded.
+
+The detailed FakeSIP capture contained 9,060 lines and no errors. It recorded
+2,970 original/fake pairs, and 6,257 lines (69%) mentioned UDP port 8567. This
+showed that the global rule was processing sustained P2P-style UDP traffic even
+while the foreground test used HTTPS/TCP. The saved log is:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/download-diag-20260726-053654Z/fakesip-download-diag.log
+sha256: 080ae20cfdbdb28edc2a4cb9b42daa58659bcd01fd1e9f13136e059e80531c67
+```
+
+The USTC LibreSpeed website was too variable for a strong causal estimate.
+Mean download rates were 41.5 Mbps with FakeSIP enabled at `repeat=2` and 42.9
+Mbps with FakeSIP stopped. Medians were 40.5 and 44.2 Mbps respectively.
+
+A fixed 64 MiB HTTPS range from TUNA, pinned to mainland IPv4 address
+101.6.15.130 and the same WAN source, was more repeatable. Median download
+rates were:
+
+```text
+repeat=2, enabled (first pass):   147.7 Mbps
+FakeSIP stopped:                 191.9 Mbps
+repeat=2, enabled (verification):134.0 Mbps
+repeat=1, enabled:               176.3 Mbps
+```
+
+Queue 513 remained at zero backlog, kernel drops, and userspace drops. CPU and
+memory were also normal, so this was not an NFQUEUE capacity failure. The
+working diagnosis is traffic amplification from `repeat=2` on a busy global
+UDP deployment. The live router was left in silent mode with `repeat=1`; all
+interfaces, TTL, marks, queue number, and no-bypass policy were unchanged.
+Treat `repeat=1` as the preferred operational setting for busy links, while
+keeping `repeat=2` available as an explicitly more aggressive choice.
+
+### Controlled IPv4 and HTTP/3 Re-test
+
+The earlier USTC fixed-file samples are not used for the final comparison.
+The first pass did not force IPv4, and later requests encountered USTC mirror
+anti-abuse throttling. The controlled re-test used Debian on the wired ESXi
+network, `curl -4`, a fixed WAN policy, and the same 64 MiB range from:
+
+```text
+https://mirrors.tuna.tsinghua.edu.cn/debian-cd/current/amd64/iso-cd/debian-13.6.0-amd64-netinst.iso
+```
+
+On `pppoe-wancm`, the FakeSIP ON/OFF/ON medians were 454.59, 456.70, and
+444.73 Mbps. The combined 12-run ON median was 449.18 Mbps, 1.65% below the
+six-run OFF median. Every request received the complete 64 MiB from mainland
+IPv4 address `101.6.15.130`. Queue 513 had no backlog, kernel drops, or
+userspace drops. The difference is inside the observed line variance and does
+not support FakeSIP as the main TCP download limiter.
+
+A coordinated baseline with both FakeSIP and FakeHTTP stopped produced
+316.57, 483.35, 485.08, 454.62, 445.58, and 487.82 Mbps, with a median of
+468.99 Mbps. Compared with the stable ON measurements, the remaining roughly
+4-5% gap can be either small additive startup overhead or ordinary line
+variance; the data does not justify attributing it to either program.
+
+Because a TCP mirror does not exercise QUIC directly, a separate A/B used
+Taobao's mainland IPv4 endpoint `221.178.73.169` with `curl --http3-only`.
+FakeSIP ON/OFF/ON each ran eight times. All 24 requests stayed on HTTP/3,
+returned HTTP 200, and downloaded the same 93,901 bytes. Median total times
+were 46.66, 50.21, and 47.55 ms. Queue 513 counters increased during both ON
+passes and still reported zero drops. The production `repeat=1`, TTL 3 setup
+therefore did not cause a handshake failure, fallback, or measurable latency
+regression for this short QUIC transaction.
+
+### Standards-based IMS payload candidates
+
+The original generated SIP message used RFC documentation-only address blocks,
+omitted the RFC 3261 Via branch magic cookie and `Max-Forwards`, and advertised
+only PCMU. These are poor characteristics for an IMS/VoLTE-looking payload.
+
+The candidate generator now:
+
+- prefixes the Via branch with `z9hG4bK` and sends `Max-Forwards: 70`;
+- uses RFC 6598 shared address space instead of TEST-NET addresses;
+- recognizes SIP URIs under `.3gppnetwork.org` as IMS profiles;
+- advertises AMR and AMR-WB using RTP/AVP, `ptime:20`, and `maxptime:240`;
+- requests bandwidth-efficient AMR framing by deliberately omitting
+  `octet-align=1`;
+- includes the IR.92-style User-Agent, `Supported: 199, timer`, and
+  `Session-Expires: 1800` headers.
+
+The OpenWrt UCI/LuCI package exposes China Mobile `460-00`, China Unicom
+`460-01`, China Telecom/legacy CDMA `460-03`, all-three rotation, standard
+SIP, and a custom URI mode. 3GPP TS 23.003 requires two-digit MNCs to be
+left-padded in the domain, producing realms such as
+`ims.mnc000.mcc460.3gppnetwork.org`. GSMA IR.92 requires AMR and AMR-WB,
+RTP/AVP, RTP over UDP, and the stated packetization times.
+
+These profiles are standards-based test candidates, not evidence that an ISP
+has a SIP whitelist. Public DNS normally does not expose carrier-private IMS
+service addresses, and no private subscriber identity, credential, or vendor
+wire format is included. Their operational value must be decided by controlled
+A/B/A measurements before changing the production profile.
+
+#### OpenWrt r14 deployment and profile A/B/A
+
+OpenWrt 25.12.5 was upgraded with `apk add` to `fakesip-0.9.1-r14` and
+`luci-app-fakesip-1.0.0-r6`. The existing UCI file was preserved, and the live
+configuration was explicitly set to `sip_profile=china_all`, silent mode,
+`repeat=1`, TTL 3, IPv4 plus IPv6, and the same three WAN interfaces.
+
+A WAN capture confirmed that the generated packet was not merely a UI change.
+The 947-byte UDP payload contained a `z9hG4bK` Via branch, `Max-Forwards: 70`,
+one of the three configured IMS realms, AMR and AMR-WB SDP, and a 386-byte body
+matching the declared Content-Length. Tcpdump reported no capture drops.
+
+The payload comparison used Debian on the wired ESXi network, a temporary
+policy route to `pppoe-wancm`, fixed mainland IPv4 address `221.178.73.204`,
+HTTP/3 only, and the same 3,449,636-byte Alibaba CDN GIF. Standard SIP ran in
+three interleaved eight-request segments; the three-network IMS profile ran in
+two eight-request segments. All 40 requests returned HTTP 200 over HTTP/3 and
+downloaded the complete object. Segment medians were:
+
+```text
+standard SIP: 148.48, 138.58, 164.03 Mbps
+three-network IMS: 163.09, 170.16 Mbps
+combined standard / IMS: 143.76 / 165.03 Mbps
+```
+
+Both IMS segments were faster than their neighbouring standard segments, but
+the path still showed substantial run-to-run variance. This supports keeping
+the standards-compliant IMS profile as the r14 production candidate; it does
+not prove that the carrier prioritizes or whitelists SIP. After the test, the
+temporary policy rule and capture files were removed, queue 513 reported zero
+backlog, kernel drops, and userspace drops, and the service was left in the IMS
+rotation profile.
+
+The pre-upgrade router rollback archive is retained on the router as:
+
+```text
+/root/fakesip-backup-20260726-152708-pre-r14.tgz
+sha256: 8dfd6e03b02ac6087374a3fb714e4d0628b0a8de2b548f073494d369dfd0d99a
+```
+
+The same archive, r14/r6 APKs, source archive, and complete Git bundle are also
+stored under:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/ims-r14-20260726-072516Z/
+```
+
+#### OpenWrt r15 reliability and LuCI deployment
+
+OpenWrt r15 keeps the r14 three-carrier IMS payload and traffic policy, while
+hardening failure handling and the ordinary-user control path. Runtime changes
+roll back partially installed nft/iptables rules, report every failed raw
+`sendto()`, key the source cache by remote address plus interface index, validate
+SIP URI size and syntax, and parse only an explicit `0x` prefix as hexadecimal.
+The procd script now rejects empty direction/family selections, validates and
+deduplicates configured interfaces before opening an instance, and only passes
+custom SIP URIs for the custom profile.
+
+`luci-app-fakesip-1.0.0-r9` adds live status polling, verified and serialized
+service controls, network/device selectors, frontend validation matching the C
+parser, and clear Running/Stopped feedback. Desktop and 390-pixel mobile LuCI
+tests covered Start, Stop, Restart, custom URI validation, Reset, and automatic
+success-notification removal. The UCI file remained byte-identical throughout.
+
+The final source passed the core regression suite, ASan/UBSan, GCC `-fanalyzer`,
+the OpenWrt init/LuCI/package tests, the Linux raw-send EPERM test, and a real
+network-namespace nft partial-setup rollback test. It was then cross-compiled
+with the OpenWrt 25.12.5 x86_64/musl SDK. APK metadata inspection confirmed
+root ownership, dependency metadata, conffile tracking, and install/removal
+scripts. The release artifacts are:
+
+```text
+fakesip-0.9.1-r15.apk
+sha256: 40c160098ebd0c4cac9bd9faa8ea498fac40584528949be9e0e1317542cc0f90
+
+luci-app-fakesip-1.0.0-r9.apk
+sha256: a2a8d5ee460a91ffd4a886144bbe27b1e950d19100f00799c5d02d348b54ad00
+```
+
+The same APKs were force-reinstalled on OpenWrt and their installed binary,
+init, and LuCI hashes matched the package metadata. The final service used PID
+22280 with silent mode, repeat 1, TTL 3, IPv4 plus IPv6, three carrier IMS URIs,
+and the three PPP WAN devices. Queue 513 showed zero backlog, kernel drops, and
+userspace drops. A 60-second health window kept one thread and seven file
+descriptors, with RSS 864-872 KiB and zero errors/drops on all three WAN devices.
+
+For a mainland connectivity check, AliDNS `223.5.5.5` resolved the Tsinghua
+TUNA mirror to `101.6.15.130`. Three Debian wired-host IPv4 downloads each
+completed the requested 64 MiB; their rates were 185.5, 247.1, and 138.2 Mbps
+(median 185.5 Mbps). The variance is not evidence of ISP prioritization, but the
+complete transfers and zero queue drops show no r15 download failure.
+
+The pre-install router backup is retained at:
+
+```text
+/root/fakesip-backup-r15-preinstall-20260729-0238/
+files-r14.tgz sha256: 312bd2f48a1e0b2f0d839c90992b917306053a308803c3c09d49f9858329538e
+```
+
+The local release backup is retained under:
+
+```text
+/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r15-release-20260729-103704/
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`
