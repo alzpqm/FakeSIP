@@ -20,6 +20,20 @@ function asList(value) {
 	return [ String(value) ];
 }
 
+function effectiveInterfaceMode(value, networks, interfaces) {
+	if (value === 'network' || value === 'device' || value === 'auto')
+		return value;
+
+	if (asList(networks).length && asList(interfaces).length)
+		return 'auto';
+	if (asList(networks).length)
+		return 'network';
+	if (asList(interfaces).length)
+		return 'device';
+
+	return 'network';
+}
+
 function utf8ByteLength(value) {
 	var bytes = 0;
 
@@ -95,15 +109,29 @@ function validateFirewallMask(sectionId, value) {
 }
 
 function validateEnabledTargets(sectionId, value) {
+	var interfaces = asList(this.section.formvalue(sectionId, 'interface'));
+	var networks = asList(this.section.formvalue(sectionId, 'network'));
+	var mode;
+
 	if (String(value) !== '1' ||
 	    String(this.section.formvalue(sectionId, 'all_interfaces')) === '1')
 		return true;
 
-	if (asList(this.section.formvalue(sectionId, 'network')).length ||
-	    asList(this.section.formvalue(sectionId, 'interface')).length)
+	mode = effectiveInterfaceMode(
+		this.section.formvalue(sectionId, 'interface_mode'),
+		networks, interfaces);
+	if (mode === 'network' && networks.length)
+		return true;
+	if (mode === 'device' && interfaces.length)
+		return true;
+	if (mode === 'auto' && (networks.length || interfaces.length))
 		return true;
 
-	return _('Select at least one network or interface.');
+	return mode === 'auto'
+		? _('Select at least one OpenWrt network or Linux device.')
+		: mode === 'device'
+		? _('Select at least one Linux device.')
+		: _('Select at least one OpenWrt network.');
 }
 
 function validateRequiredPair(sectionId, value, otherOption, message) {
@@ -289,10 +317,11 @@ return view.extend({
 		}, this));
 	},
 
-	actionButton: function(label, action, cssClass) {
+	actionButton: function(label, title, action, cssClass) {
 		var button = E('button', {
 			'type': 'button',
 			'class': 'btn cbi-button %s'.format(cssClass),
+			'title': title,
 			'click': L.bind(function(ev) {
 				ev.preventDefault();
 				return this.serviceCommand(action);
@@ -314,11 +343,14 @@ return view.extend({
 				E('div', { 'class': 'cbi-value-field' }, this.statusNode)
 			]),
 			E('div', { 'class': 'cbi-page-actions' }, [
-				this.actionButton(_('Start'), 'start', 'cbi-button-apply'),
+				this.actionButton(_('Start'), _('Start FakeSIP'),
+					'start', 'cbi-button-positive'),
 				' ',
-				this.actionButton(_('Restart'), 'restart', 'cbi-button-reload'),
+				this.actionButton(_('Restart'), _('Restart FakeSIP'),
+					'restart', 'cbi-button-apply'),
 				' ',
-				this.actionButton(_('Stop'), 'stop', 'cbi-button-remove')
+				this.actionButton(_('Stop'), _('Stop FakeSIP'),
+					'stop', 'cbi-button-negative')
 			])
 		]);
 
@@ -326,9 +358,9 @@ return view.extend({
 		return panel;
 	},
 
-	render: function(status) {
-			var m, mapReset, s, o;
-		var enabledOption, networkOption, interfaceOption, allInterfacesOption;
+		render: function(status) {
+		var m, mapReset, s, o;
+		var enabledOption, modeOption, networkOption, interfaceOption, allInterfacesOption;
 		var outboundOption, inboundOption, ipv4Option, ipv6Option;
 		var markOption, maskOption, dynamicOption, noHopOption;
 		var profileOption, sipUriOption;
@@ -357,12 +389,28 @@ return view.extend({
 		allInterfacesOption.default = '0';
 		allInterfacesOption.onchange = revalidate(s, [ 'enabled' ]);
 
-		networkOption = s.taboption('basic', widgets.NetworkSelect, 'network', _('OpenWrt networks'));
+		modeOption = s.taboption('basic', form.ListValue, 'interface_mode', _('WAN selection'));
+		modeOption.value('network', _('OpenWrt network'));
+		modeOption.value('device', _('Linux device'));
+		modeOption.value('auto', _('Legacy combined'));
+		modeOption.default = 'network';
+		modeOption.rmempty = false;
+		modeOption.depends('all_interfaces', '0');
+		modeOption.cfgvalue = function(sectionId) {
+			return effectiveInterfaceMode(
+				this.map.data.get('fakesip', sectionId, 'interface_mode'),
+				this.map.data.get('fakesip', sectionId, 'network'),
+				this.map.data.get('fakesip', sectionId, 'interface'));
+		};
+		modeOption.onchange = revalidate(s, [ 'enabled' ]);
+
+		networkOption = s.taboption('basic', widgets.NetworkSelect, 'network', _('WAN networks'));
 		networkOption.multiple = true;
 		networkOption.nocreate = true;
 		networkOption.rmempty = true;
 		networkOption.retain = true;
-		networkOption.depends('all_interfaces', '0');
+		networkOption.depends({ all_interfaces: '0', interface_mode: 'network' });
+		networkOption.depends({ all_interfaces: '0', interface_mode: 'auto' });
 		networkOption.onchange = revalidate(s, [ 'enabled' ]);
 
 		interfaceOption = s.taboption('basic', widgets.DeviceSelect, 'interface', _('Linux devices'));
@@ -371,7 +419,8 @@ return view.extend({
 		interfaceOption.nocreate = false;
 		interfaceOption.rmempty = true;
 		interfaceOption.retain = true;
-		interfaceOption.depends('all_interfaces', '0');
+		interfaceOption.depends({ all_interfaces: '0', interface_mode: 'device' });
+		interfaceOption.depends({ all_interfaces: '0', interface_mode: 'auto' });
 		interfaceOption.validate = validateInterfaceList;
 		interfaceOption.onchange = revalidate(s, [ 'enabled' ]);
 

@@ -107,9 +107,14 @@ procd_close_instance() {
 	PROCD_CLOSE=$((PROCD_CLOSE + 1))
 }
 
+procd_add_interface_trigger() {
+	PROCD_INTERFACE_TRIGGERS="${PROCD_INTERFACE_TRIGGERS}${PROCD_INTERFACE_TRIGGERS:+ }$2"
+}
+
 reset_case() {
 	CFG_enabled=1
 	CFG_all_interfaces=0
+	CFG_interface_mode=
 	CFG_network=
 	CFG_interface=
 	CFG_sip_profile=standard
@@ -139,6 +144,7 @@ reset_case() {
 	PROCD_IFACES=
 	PROCD_URIS=
 	PROCD_ALL=0
+	PROCD_INTERFACE_TRIGGERS=
 	LOG_MESSAGES=
 }
 
@@ -233,10 +239,79 @@ assert_eq "pppoe-wan pppoe-manual" "$PROCD_IFACES" \
 	"resolved and direct interfaces must be ordered and deduplicated"
 
 reset_case
+CFG_interface_mode=network
+CFG_network=wan
+CFG_interface=pppoe-manual
+NET_wan=pppoe-wan
+start_instance main
+assert_eq 1 "$PROCD_OPEN" "network mode must start with a resolved network"
+assert_eq pppoe-wan "$PROCD_IFACES" \
+	"network mode must ignore retained Linux devices"
+
+reset_case
+CFG_interface_mode=device
+CFG_network=wan
+CFG_interface=pppoe-manual
+NET_wan=pppoe-wan
+start_instance main
+assert_eq 1 "$PROCD_OPEN" "device mode must start with a Linux device"
+assert_eq pppoe-manual "$PROCD_IFACES" \
+	"device mode must ignore retained OpenWrt networks"
+
+reset_case
+CFG_interface_mode=network
+CFG_interface=pppoe-manual
+start_instance main
+assert_eq 0 "$PROCD_OPEN" "network mode without a network must not start"
+assert_contains "$LOG_MESSAGES" "has no OpenWrt network" \
+	"a missing OpenWrt network must be logged"
+
+reset_case
+CFG_interface_mode=device
+CFG_network=wan
+NET_wan=pppoe-wan
+start_instance main
+assert_eq 0 "$PROCD_OPEN" "device mode without a device must not start"
+assert_contains "$LOG_MESSAGES" "has no Linux device" \
+	"a missing Linux device must be logged"
+
+reset_case
+CFG_interface_mode=invalid
+CFG_network=wan
+CFG_interface=pppoe-manual
+NET_wan=pppoe-wan
+start_instance main
+assert_eq 0 "$PROCD_OPEN" "an invalid interface mode must not start"
+assert_contains "$LOG_MESSAGES" "has invalid interface mode 'invalid'" \
+	"an invalid interface mode must be logged"
+
+reset_case
 CFG_interface="pppoe-future pppoe-future"
 start_instance main
 assert_eq 1 "$PROCD_OPEN" "direct PPP names must be accepted before they exist"
 assert_eq pppoe-future "$PROCD_IFACES" "direct interface names must be deduplicated"
+
+reset_case
+CFG_interface_mode=network
+CFG_network="wan wan2"
+add_instance_triggers main
+assert_eq "wan wan2" "$PROCD_INTERFACE_TRIGGERS" \
+	"network mode must register logical-network reconnect triggers"
+
+reset_case
+CFG_interface_mode=device
+CFG_network=wan
+CFG_interface=pppoe-wan
+add_instance_triggers main
+assert_eq "" "$PROCD_INTERFACE_TRIGGERS" \
+	"device mode must not register triggers for retained networks"
+
+reset_case
+CFG_network=wan
+CFG_interface=pppoe-manual
+add_instance_triggers main
+assert_eq wan "$PROCD_INTERFACE_TRIGGERS" \
+	"legacy mixed mode must retain logical-network reconnect triggers"
 
 reset_case
 CFG_interface=bad/name

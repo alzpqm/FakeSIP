@@ -69,16 +69,20 @@ opkg install /tmp/luci-app-fakesip_*.ipk
 The default config is disabled so installation never changes traffic by
 surprise. Enable it and point it at your WAN network:
 
-In LuCI, open **Services > FakeSIP**, enable the `main` configuration, select the
-WAN network or Linux device, then use **Save & Apply**. The registered procd
-reload trigger applies configuration changes automatically; the service buttons
-are for explicit start, stop, or recovery operations.
+In LuCI, open **Services > FakeSIP**, enable the `main` configuration, keep the
+recommended **OpenWrt network** mode, select the WAN network, then use
+**Save & Apply**. The init script resolves that logical network to its current
+Linux device, including a dynamically created PPPoE device. The registered
+procd interface and reload triggers handle reconnects and configuration changes;
+the service buttons are for explicit start, restart, or stop operations.
 
 The same setup from SSH is:
 
 ```sh
 uci set fakesip.main.enabled='1'
+uci set fakesip.main.interface_mode='network'
 uci -q delete fakesip.main.network
+uci -q delete fakesip.main.interface
 uci add_list fakesip.main.network='wan'
 uci set fakesip.main.ipv4='1'
 uci set fakesip.main.ipv6='1'
@@ -96,7 +100,7 @@ For multi-WAN, add each logical network to the same instance. Running one
 FakeSIP process per WAN with separate queue numbers can make later queues
 unreachable because all instances share the same nft table and chain names.
 The package therefore exposes and starts only the `main` UCI section. Add every
-WAN network or Linux device to that one section.
+WAN network to that one section.
 
 ```sh
 uci add_list fakesip.main.network='wan2'
@@ -105,19 +109,24 @@ uci commit fakesip
 /etc/init.d/fakesip restart
 ```
 
-If you already know the Linux device names, use `interface` instead:
+The advanced **Linux device** mode is retained for unusual configurations that
+do not have a usable OpenWrt logical network. It binds directly to the named
+device and therefore cannot use logical-network reconnect triggers:
 
 ```sh
+uci set fakesip.main.interface_mode='device'
 uci -q delete fakesip.main.network
+uci -q delete fakesip.main.interface
 uci add_list fakesip.main.interface='pppoe-wan'
 uci commit fakesip
 /etc/init.d/fakesip restart
 ```
 
-If both `network` and `interface` are present, the init script resolves and
-deduplicates them before starting FakeSIP. Values in `network` may be logical
-OpenWrt network names such as `wan`; Linux devices such as `pppoe-wan` are also
-accepted for robustness, but keeping device names under `interface` is clearer.
+The selected standard mode determines which list is active; retained values
+from the other mode are ignored. Configurations created before `interface_mode`
+existed remain compatible: network-only and device-only entries infer the
+corresponding mode, while old mixed configurations retain their combined
+behavior under **Legacy combined** until the user chooses a standard mode.
 
 ## SIP Payload Profile
 
