@@ -197,6 +197,15 @@ assert_eq "" "$PROCD_URIS" \
 	"the standard SIP profile must ignore stale custom URIs"
 
 reset_case
+CFG_sip_profile=
+CFG_sip_uri=sip:stale@example.com
+CFG_interface=pppoe-wan
+start_instance main
+assert_eq 1 "$PROCD_OPEN" "an empty SIP profile must use the standard behavior"
+assert_eq "" "$PROCD_URIS" \
+	"an empty SIP profile must ignore stale custom URIs"
+
+reset_case
 start_instance main
 assert_eq 0 "$PROCD_OPEN" "an empty interface configuration must not start"
 assert_contains "$LOG_MESSAGES" "has no network or interface" \
