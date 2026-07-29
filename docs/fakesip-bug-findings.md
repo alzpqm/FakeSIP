@@ -781,6 +781,42 @@ The local APK and router archives are under:
 /Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r16-release-20260729-150049/
 ```
 
+### LuCI r11 collapses duplicate IPv6 companion WANs
+
+OpenWrt may expose an automatically generated DHCPv6 logical network next to
+each PPPoE parent. On the production router, the mappings were:
+
+```text
+wan2    -> pppoe-wan2    wan2_6    -> pppoe-wan2
+wancm   -> pppoe-wancm   wancm_6   -> pppoe-wancm
+wanct   -> pppoe-wanct   wanct_6   -> pppoe-wanct
+```
+
+Selecting both names is redundant in this layout. LuCI r11 labels the primary
+OpenWrt selector `Interfaces` to match FakeHTTP and hides a `_6` companion only
+when its parent exists and both resolve to the same L3 device. A configured
+companion remains visible, and a companion with a distinct device is never
+hidden. Linux-device and legacy-combined modes remain available.
+
+The production configuration still selects `wan2`, `wancm`, and `wanct` once.
+The init script resolves them to all three PPPoE devices and launches FakeSIP
+with `-4 -6`. The active `ip6 fakesip` table contains IPv6 ingress,
+postrouting, UDP queue 513, and tagged ICMPv6 rules; the tagged ICMPv6 counter
+had three live hits, proving that marked IPv6 fake packets had elicited
+time-exceeded responses. The r11 upgrade did not restart the daemon or change
+UCI. Queue 513 retained zero backlog, kernel drops, and userspace drops, and a
+post-upgrade mainland IPv6 DNS and HTTP/3 check succeeded.
+
+```text
+luci-app-fakesip-1.0.0-r11.apk
+sha256: ebff3087f7a180bc602d0e80a632105e43b0848f877aca1f8478bc823baca80e
+
+/root/fakesip-luci-r11-pre-20260729-1846.tgz
+sha256: c1ad5900b4ac320ff1dfd47576d1f2a812e3842c0949dc617cd74b7b2b565b9f
+
+/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-luci-r11-20260729-1845/
+```
+
 ## Downgraded Or Unconfirmed Findings
 
 ### IPv6 nft `icmp type time-exceeded`

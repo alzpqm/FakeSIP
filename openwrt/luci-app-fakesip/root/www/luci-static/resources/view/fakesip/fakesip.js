@@ -34,6 +34,41 @@ function effectiveInterfaceMode(value, networks, interfaces) {
 	return 'network';
 }
 
+function networkL3DeviceName(network) {
+	var device;
+
+	if (!network || typeof network.getL3Device !== 'function')
+		return null;
+
+	device = network.getL3Device();
+	return device && typeof device.getName === 'function'
+		? device.getName()
+		: null;
+}
+
+function isRedundantIpv6Network(networks, name) {
+	var baseName, baseNetwork, ipv6Network;
+
+	name = String(name == null ? '' : name);
+	if (!name.match(/_6$/))
+		return false;
+
+	baseName = name.slice(0, -2);
+	for (var i = 0; i < networks.length; i++) {
+		if (networks[i].getName() === baseName)
+			baseNetwork = networks[i];
+		else if (networks[i].getName() === name)
+			ipv6Network = networks[i];
+	}
+
+	if (!baseNetwork || !ipv6Network)
+		return false;
+
+	baseName = networkL3DeviceName(baseNetwork);
+	name = networkL3DeviceName(ipv6Network);
+	return baseName != null && name != null && baseName === name;
+}
+
 function utf8ByteLength(value) {
 	var bytes = 0;
 
@@ -390,8 +425,8 @@ return view.extend({
 		allInterfacesOption.onchange = revalidate(s, [ 'enabled' ]);
 
 		modeOption = s.taboption('basic', form.ListValue, 'interface_mode', _('WAN selection'));
-		modeOption.value('network', _('OpenWrt network'));
-		modeOption.value('device', _('Linux device'));
+		modeOption.value('network', _('OpenWrt networks'));
+		modeOption.value('device', _('Linux devices'));
 		modeOption.value('auto', _('Legacy combined'));
 		modeOption.default = 'network';
 		modeOption.rmempty = false;
@@ -404,16 +439,22 @@ return view.extend({
 		};
 		modeOption.onchange = revalidate(s, [ 'enabled' ]);
 
-		networkOption = s.taboption('basic', widgets.NetworkSelect, 'network', _('WAN networks'));
+		networkOption = s.taboption('basic', widgets.NetworkSelect, 'network', _('Interfaces'));
 		networkOption.multiple = true;
 		networkOption.nocreate = true;
 		networkOption.rmempty = true;
 		networkOption.retain = true;
+		networkOption.filter = function(sectionId, value) {
+			var configured = asList(this.map.data.get('fakesip', sectionId, 'network'));
+
+			return configured.indexOf(value) >= 0 ||
+				!isRedundantIpv6Network(this.networks, value);
+		};
 		networkOption.depends({ all_interfaces: '0', interface_mode: 'network' });
 		networkOption.depends({ all_interfaces: '0', interface_mode: 'auto' });
 		networkOption.onchange = revalidate(s, [ 'enabled' ]);
 
-		interfaceOption = s.taboption('basic', widgets.DeviceSelect, 'interface', _('Linux devices'));
+		interfaceOption = s.taboption('basic', widgets.DeviceSelect, 'interface', _('Linux devices (advanced)'));
 		interfaceOption.multiple = true;
 		interfaceOption.noaliases = true;
 		interfaceOption.nocreate = false;

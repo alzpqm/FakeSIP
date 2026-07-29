@@ -76,6 +76,12 @@ Linux device, including a dynamically created PPPoE device. The registered
 procd interface and reload triggers handle reconnects and configuration changes;
 the service buttons are for explicit start, restart, or stop operations.
 
+Select each WAN only once. LuCI hides an automatically generated IPv6 companion
+such as `wan_6` when it resolves to the same L3 device as `wan`; the IPv4 and
+IPv6 switches determine which address families FakeSIP processes. A previously
+configured companion remains visible so an existing unusual setup is never
+silently discarded.
+
 The same setup from SSH is:
 
 ```sh

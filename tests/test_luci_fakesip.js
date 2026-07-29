@@ -22,6 +22,8 @@ const helpers = Function('_', source.slice(helperStart, helperEnd) + '\n' +
 		'STATUS_STOPPED: STATUS_STOPPED,' +
 		'STATUS_UNKNOWN: STATUS_UNKNOWN,' +
 		'effectiveInterfaceMode: effectiveInterfaceMode,' +
+		'networkL3DeviceName: networkL3DeviceName,' +
+		'isRedundantIpv6Network: isRedundantIpv6Network,' +
 		'utf8ByteLength: utf8ByteLength,' +
 		'parseServiceStatus: parseServiceStatus,' +
 		'parseUint32: parseUint32,' +
@@ -39,6 +41,8 @@ const {
 	STATUS_STOPPED,
 	STATUS_UNKNOWN,
 	effectiveInterfaceMode,
+	networkL3DeviceName,
+	isRedundantIpv6Network,
 	utf8ByteLength,
 	parseServiceStatus,
 	parseUint32,
@@ -67,6 +71,17 @@ function context(values) {
 	};
 }
 
+function mockNetwork(name, deviceName) {
+	return {
+		getName: function() { return name; },
+		getL3Device: function() {
+			return deviceName == null ? null : {
+				getName: function() { return deviceName; }
+			};
+		}
+	};
+}
+
 assert(parseServiceStatus({ code: 0, stdout: 'running\n' }).state === STATUS_RUNNING,
 	'running status was not recognized');
 assert(parseServiceStatus({ code: 3, stdout: 'inactive\n' }).state === STATUS_STOPPED,
@@ -90,6 +105,24 @@ assert(effectiveInterfaceMode(undefined, [], [ 'pppoe-wan' ]) === 'device',
 	'a legacy device-only configuration did not infer device mode');
 assert(effectiveInterfaceMode(undefined, [], []) === 'network',
 	'an empty configuration did not default to network mode');
+
+const sharedPppNetworks = [
+	mockNetwork('wan', 'pppoe-wan'),
+	mockNetwork('wan_6', 'pppoe-wan')
+];
+assert(networkL3DeviceName(sharedPppNetworks[0]) === 'pppoe-wan',
+	'logical network L3 device was not detected');
+assert(isRedundantIpv6Network(sharedPppNetworks, 'wan_6') === true,
+	'an IPv6 companion sharing the parent PPP device was not collapsed');
+assert(isRedundantIpv6Network(sharedPppNetworks, 'wan') === false,
+	'a parent WAN network was incorrectly collapsed');
+assert(isRedundantIpv6Network([
+	mockNetwork('wan', 'pppoe-wan'),
+	mockNetwork('wan_6', 'eth9')
+], 'wan_6') === false, 'a distinct IPv6 L3 device was hidden');
+assert(isRedundantIpv6Network([
+	mockNetwork('custom_6', 'eth9')
+], 'custom_6') === false, 'an IPv6 network without a parent was hidden');
 
 assert(parseUint32('1') === 1, 'decimal uint32 parsing failed');
 assert(parseUint32('0x10000') === 65536, 'hexadecimal uint32 parsing failed');
@@ -189,6 +222,10 @@ assert(source.indexOf("interface_mode: 'device'") >= 0,
 	'Linux device selection is not tied to device mode');
 assert(source.indexOf("modeOption.value('auto', _('Legacy combined'))") >= 0,
 	'legacy mixed configurations cannot be represented honestly');
+assert(source.indexOf("widgets.NetworkSelect, 'network', _('Interfaces')") >= 0,
+	'OpenWrt network selector is not aligned with the FakeHTTP interface label');
+assert(source.indexOf('isRedundantIpv6Network(this.networks, value)') >= 0,
+	'redundant IPv6 companion networks are not filtered');
 
 const acl = JSON.parse(fs.readFileSync(aclPath, 'utf8'))['luci-app-fakesip'];
 const readCommands = Object.keys(acl.read.file || {});
