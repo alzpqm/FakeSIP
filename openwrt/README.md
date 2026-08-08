@@ -27,7 +27,10 @@ make package/luci-app-fakesip/compile V=s
 ```
 
 `FAKESIP_SRC_DIR` builds the package from your local working tree. Without it,
-the recipe fetches the pinned fork commit in `openwrt/fakesip/Makefile`.
+the recipe fetches the pinned fork commit in `openwrt/fakesip/Makefile`. The
+current core package release is `0.9.1-r17`, pinned to commit
+`ebe90f7fb191e0fc292006b0da3f28c5ef4a8da5`, so a normal SDK build includes the
+same payload rotation fix as this working tree.
 
 The package artifact is written under `bin/packages/`.
 
