@@ -253,9 +253,9 @@ int fs_payload_setup(void)
             current_node->next = node;
             node->next = next;
         } else {
-            current_node = node;
             node->next = node;
         }
+        current_node = node;
 
         switch (pinfo->type) {
             case FS_PAYLOAD_CUSTOM:

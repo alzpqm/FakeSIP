@@ -153,6 +153,35 @@ int main(void)
     }
     fs_payload_cleanup();
 
+    {
+        struct payload_info rotation_payloads[] = {
+            {FS_PAYLOAD_SIP, "sip:first@ims.mnc000.mcc460.3gppnetwork.org"},
+            {FS_PAYLOAD_SIP, "sip:second@ims.mnc001.mcc460.3gppnetwork.org"},
+            {FS_PAYLOAD_SIP, "sip:third@ims.mnc003.mcc460.3gppnetwork.org"},
+            {FS_PAYLOAD_END, NULL},
+        };
+        static const char *const expected_order[] = {
+            "first@", "second@", "third@", "first@",
+        };
+        size_t i;
+
+        g_ctx.plinfo = rotation_payloads;
+        if (fs_payload_setup() < 0) {
+            return fail("rotation payload setup failed");
+        }
+        for (i = 0; i < sizeof(expected_order) / sizeof(expected_order[0]);
+             i++) {
+            if (th_payload_get(&payload, &payload_len) < 0 ||
+                !payload_contains(payload, payload_len,
+                                  expected_order[i])) {
+                fs_payload_cleanup();
+                return fail("payload rotation order does not match "
+                            "configuration order");
+            }
+        }
+        fs_payload_cleanup();
+    }
+
     fill_ims_uri(max_sip_uri, SIP_URI_MAXLEN);
     boundary_payloads[0].info = max_sip_uri;
     g_ctx.plinfo = boundary_payloads;
