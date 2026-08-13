@@ -1,8 +1,8 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-fakesip
-PKG_VERSION:=1.0.0
-PKG_RELEASE:=11
+PKG_VERSION:=0.9.1
+PKG_RELEASE:=18
 PKGARCH:=all
 
 include $(INCLUDE_DIR)/package.mk
@@ -12,7 +12,7 @@ define Package/luci-app-fakesip
   CATEGORY:=LuCI
   SUBMENU:=3. Applications
   TITLE:=LuCI support for FakeSIP
-  DEPENDS:=+fakesip
+  DEPENDS:=+fakesip +luci-base +rpcd-mod-file
 endef
 
 define Package/luci-app-fakesip/description

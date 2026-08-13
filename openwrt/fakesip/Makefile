@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=fakesip
 PKG_VERSION:=0.9.1
-PKG_RELEASE:=17
+PKG_RELEASE:=18
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -24,7 +24,10 @@ define Package/fakesip
   CATEGORY:=Network
   TITLE:=UDP SIP camouflage using Netfilter Queue
   URL:=https://github.com/alzpqm/FakeSIP
-  DEPENDS:=+libnetfilter-queue +libnfnetlink +libmnl
+  DEPENDS:=+libnetfilter-queue +libnfnetlink +libmnl +kmod-nfnetlink-queue \
+    +PACKAGE_firewall4:nftables-json +PACKAGE_firewall4:kmod-nft-queue \
+    +PACKAGE_firewall:iptables-mod-nfqueue \
+    +PACKAGE_firewall:iptables-mod-conntrack-extra
 endef
 
 define Package/fakesip/description

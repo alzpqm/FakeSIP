@@ -4,6 +4,10 @@ set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 PKG_DIR="$ROOT_DIR/openwrt/fakesip"
 LUCI_DIR="$ROOT_DIR/openwrt/luci-app-fakesip"
+CORE_VERSION=$(sed -n 's/^PKG_VERSION:=//p' "$PKG_DIR/Makefile")
+LUCI_VERSION=$(sed -n 's/^PKG_VERSION:=//p' "$LUCI_DIR/Makefile")
+CORE_RELEASE=$(sed -n 's/^PKG_RELEASE:=//p' "$PKG_DIR/Makefile")
+LUCI_RELEASE=$(sed -n 's/^PKG_RELEASE:=//p' "$LUCI_DIR/Makefile")
 
 fail() {
     printf 'FAIL: %s\n' "$*" >&2
@@ -36,6 +40,7 @@ require_file "$PKG_DIR/Makefile"
 require_file "$PKG_DIR/files/fakesip.config"
 require_file "$PKG_DIR/files/fakesip.init"
 require_file "$ROOT_DIR/openwrt/README.md"
+require_file "$ROOT_DIR/tools/build-openwrt-ipk.sh"
 require_file "$LUCI_DIR/Makefile"
 require_file "$LUCI_DIR/root/usr/share/luci/menu.d/luci-app-fakesip.json"
 require_file "$LUCI_DIR/root/usr/share/rpcd/acl.d/luci-app-fakesip.json"
@@ -44,7 +49,13 @@ require_file "$ROOT_DIR/tests/test_luci_fakesip.js"
 
 require_executable "$PKG_DIR/files/fakesip.init"
 
+[ "$CORE_VERSION" = "$LUCI_VERSION" ] ||
+    fail "core/LuCI package versions differ: $CORE_VERSION vs $LUCI_VERSION"
+[ "$CORE_RELEASE" = "$LUCI_RELEASE" ] ||
+    fail "core/LuCI package releases differ: $CORE_RELEASE vs $LUCI_RELEASE"
+
 sh -n "$PKG_DIR/files/fakesip.init"
+sh -n "$ROOT_DIR/tools/build-openwrt-ipk.sh"
 sh "$ROOT_DIR/tests/test_openwrt_init.sh"
 if command -v node >/dev/null 2>&1; then
     node --check "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js" >/dev/null
@@ -61,11 +72,32 @@ fi
 
 require_grep 'BuildPackage,fakesip' "$PKG_DIR/Makefile"
 require_grep 'libnetfilter-queue' "$PKG_DIR/Makefile"
+require_grep 'kmod-nfnetlink-queue' "$PKG_DIR/Makefile"
 require_grep 'fakesip.config' "$PKG_DIR/Makefile"
 require_grep 'fakesip.init' "$PKG_DIR/Makefile"
-require_grep 'PKG_RELEASE:=17' "$PKG_DIR/Makefile"
+require_grep 'PKG_RELEASE:=18' "$PKG_DIR/Makefile"
 require_grep 'PKG_SOURCE_VERSION:=ebe90f7fb191e0fc292006b0da3f28c5ef4a8da5' "$PKG_DIR/Makefile"
+require_grep 'PACKAGE_firewall4:nftables-json' "$PKG_DIR/Makefile"
+require_grep 'PACKAGE_firewall4:kmod-nft-queue' "$PKG_DIR/Makefile"
+require_grep 'PACKAGE_firewall:iptables-mod-nfqueue' "$PKG_DIR/Makefile"
+require_grep 'PACKAGE_firewall:iptables-mod-conntrack-extra' "$PKG_DIR/Makefile"
+require_grep 'for feed in base packages luci' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'scripts/feeds update \$feed' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'ALL_KMODS=\${ALL_KMODS:-n}' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'set_config_value' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'set_config_bool' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'set_config_bool ALL_KMODS' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'package/feeds/base/libmnl/compile' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'NO_DEPS=1' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'FIREWALL_PACKAGE=firewall4' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'FIREWALL_PACKAGE=firewall' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'strip_package_selections' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'strip_profile_defaults' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'strip_target_package_defaults' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'select \(DEFAULT_|MODULE_DEFAULT_' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+require_grep 'Existing SDK package selections are restored' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
 require_grep 'kmod-nft-queue' "$ROOT_DIR/openwrt/README.md"
+require_grep '19\.07' "$ROOT_DIR/openwrt/README.md"
 require_grep 'config fakesip' "$PKG_DIR/files/fakesip.config"
 require_grep "option ipv6 '1'" "$PKG_DIR/files/fakesip.config"
 require_grep "option silent '1'" "$PKG_DIR/files/fakesip.config"
@@ -85,7 +117,10 @@ require_grep '@th,64,32' "$ROOT_DIR/src/ipv6nft.c"
 forbid_grep 'ipt_.*icmp_cmd' "$ROOT_DIR/src/ipv4ipt.c"
 forbid_grep 'ipt_.*icmp_cmd' "$ROOT_DIR/src/ipv6ipt.c"
 require_grep 'BuildPackage,luci-app-fakesip' "$LUCI_DIR/Makefile"
-require_grep 'PKG_RELEASE:=11' "$LUCI_DIR/Makefile"
+require_grep 'PKG_VERSION:=0.9.1' "$LUCI_DIR/Makefile"
+require_grep 'PKG_RELEASE:=18' "$LUCI_DIR/Makefile"
+require_grep 'luci-base' "$LUCI_DIR/Makefile"
+require_grep 'rpcd-mod-file' "$LUCI_DIR/Makefile"
 require_grep 'admin/services/fakesip' "$LUCI_DIR/root/usr/share/luci/menu.d/luci-app-fakesip.json"
 require_grep 'luci-app-fakesip' "$LUCI_DIR/root/usr/share/rpcd/acl.d/luci-app-fakesip.json"
 require_grep 'form.Map..fakesip' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
@@ -103,6 +138,8 @@ require_grep "fs.exec\('/etc/init.d/fakesip', \[ 'status' \]\)" "$LUCI_DIR/root/
 forbid_grep 'fs.exec_direct' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
 forbid_grep 'window.location.reload' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
 require_grep 'poll.add\(this.statusPoll, 5\)' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
+require_grep 'getSectionOptionUIElement' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
+require_grep 'notifyServiceSuccess' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
 forbid_grep 'node.insertBefore\(this.renderStatusPanel' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
 forbid_grep 'nbytes < 0 && errno != EPERM' "$ROOT_DIR/src/rawsend.c"
 require_grep '^    if \(nbytes < 0\) \{' "$ROOT_DIR/src/rawsend.c"

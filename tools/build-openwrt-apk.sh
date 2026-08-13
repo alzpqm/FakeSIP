@@ -134,7 +134,7 @@ chown -R 0:0 "$FAKESIP_ROOT"
     --info "url:https://github.com/MikeWang000000/FakeSIP" \
     --info "maintainer:MikeWang000000" \
     --info "provides:fakesip-any" \
-    --info "depends:libc libnetfilter-queue1 libnfnetlink0 libmnl0" \
+    --info "depends:libc libnetfilter-queue1 libnfnetlink0 libmnl0 kmod-nfnetlink-queue kmod-nft-queue nftables-json" \
     --script "post-install:$FAKESIP_SCRIPTS/post-install" \
     --script "pre-deinstall:$FAKESIP_SCRIPTS/pre-deinstall" \
     --files "$FAKESIP_ROOT" \
@@ -155,7 +155,7 @@ chown -R 0:0 "$LUCI_ROOT"
     --info "origin:feeds/base/luci-app-fakesip" \
     --info "url:https://github.com/MikeWang000000/FakeSIP" \
     --info "maintainer:MikeWang000000" \
-    --info "depends:fakesip" \
+    --info "depends:fakesip luci-base rpcd-mod-file" \
     --script "post-install:$LUCI_SCRIPTS/post-install" \
     --script "pre-deinstall:$LUCI_SCRIPTS/pre-deinstall" \
     --files "$LUCI_ROOT" \

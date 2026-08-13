@@ -34,7 +34,8 @@ const helpers = Function('_', source.slice(helperStart, helperEnd) + '\n' +
 		'validateSipUri: validateSipUri,' +
 		'validateSipProfile: validateSipProfile,' +
 		'validateAbsolutePath: validateAbsolutePath,' +
-		'validateHopSettings: validateHopSettings' +
+		'validateHopSettings: validateHopSettings,' +
+		'getSectionOptionUIElement: getSectionOptionUIElement' +
 	'};')(translate);
 const {
 	STATUS_RUNNING,
@@ -53,7 +54,8 @@ const {
 	validateSipUri,
 	validateSipProfile,
 	validateAbsolutePath,
-	validateHopSettings
+	validateHopSettings,
+	getSectionOptionUIElement
 } = helpers;
 
 function assert(condition, message) {
@@ -203,6 +205,17 @@ assert(validateHopSettings.call(context({ dynamic_pct: '10' }), 'main', '1') !==
 assert(validateHopSettings.call(context({ dynamic_pct: '0' }), 'main', '1') === true,
 	'valid hop settings were rejected');
 
+const legacySection = {
+	children: [ {
+		option: 'enabled',
+		getUIElement: function() {
+			return { triggerValidation: function() {} };
+		}
+	} ]
+};
+assert(getSectionOptionUIElement(legacySection, 'main', 'enabled') != null,
+	'19.07 section child UI fallback was not found');
+
 const startButton = source.indexOf("this.actionButton(_('Start')");
 const restartButton = source.indexOf("this.actionButton(_('Restart')");
 const stopButton = source.indexOf("this.actionButton(_('Stop')");
@@ -246,7 +259,7 @@ if (!String.prototype.format) {
 	});
 }
 
-function instantiateView(exec, notifications) {
+function instantiateView(exec, notifications, timedNotifications) {
 	const viewMock = { extend: function(definition) { return definition; } };
 	const luciMock = {
 		bind: function(fn, self) {
@@ -259,11 +272,12 @@ function instantiateView(exec, notifications) {
 	const uiMock = {
 		addNotification: function(title, node, type) {
 			notifications.push({ node: node, type: type });
-		},
-		addTimeLimitedNotification: function(title, node, timeout, type) {
-			notifications.push({ node: node, timeout: timeout, type: type });
 		}
 	};
+	if (timedNotifications !== false)
+		uiMock.addTimeLimitedNotification = function(title, node, timeout, type) {
+			notifications.push({ node: node, timeout: timeout, type: type });
+		};
 	const elementMock = function(tag, attrs, children) {
 		return { tag: tag, attrs: attrs, children: children };
 	};
@@ -341,6 +355,19 @@ async function testServiceActions() {
 	instance.serviceBusy = true;
 	await instance.serviceCommand('restart');
 	assert(actionCalls === 0, 'busy service control executed a duplicate command');
+
+	notifications = [];
+	instance = instantiateView(function(path, args) {
+		if (args[0] === 'status')
+			return Promise.resolve({ code: 0, stdout: 'running\n' });
+		return Promise.resolve({ code: 0, stdout: '' });
+	}, notifications, false);
+	instance.serviceReadonly = false;
+	instance.serviceBusy = false;
+	instance.serviceStatus = { state: STATUS_STOPPED, output: '' };
+	await instance.serviceCommand('start');
+	assert(notifications.some(function(item) { return item.type === 'info'; }),
+		'legacy LuCI notification fallback did not report success');
 }
 
 testServiceActions().then(function() {

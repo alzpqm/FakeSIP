@@ -3,6 +3,28 @@
 This directory contains an OpenWrt package recipe, a UCI config, and a procd
 service script for FakeSIP.
 
+## Compatibility Matrix
+
+The package uses the native package format of each OpenWrt release:
+
+| OpenWrt releases | Package format | Default firewall path | FakeSIP setting |
+| --- | --- | --- | --- |
+| 25.12 | APK via `apk` | `fw4`/nftables | `use_iptables='0'` |
+| 24.10, 23.05, 22.03 | IPK via `opkg` | `fw4`/nftables | `use_iptables='0'` |
+| 21.02 | IPK via `opkg` | `fw3`/iptables | `use_iptables='1'` |
+| 19.07 | IPK via `opkg` | `fw3`/iptables | `use_iptables='1'` |
+
+This repository's compatibility gate covers OpenWrt 19.07 through 25.12. The
+18.06 and older series use an earlier LuCI JavaScript packaging/API generation
+and are not claimed as supported until they receive a separate port. The
+package can still be built from an older SDK by an experienced user, but that
+is not a release guarantee.
+
+OpenWrt 22.03 and later use firewall4/nftables by default. OpenWrt 19.07 and
+21.02 use the legacy firewall3/iptables path by default. The core binary
+contains both backends; the selected path is controlled by `use_iptables` and
+the presence of the matching runtime packages.
+
 ## Build With The OpenWrt SDK
 
 For OpenWrt 25 APK packages, the most direct path is:
@@ -28,17 +50,45 @@ make package/luci-app-fakesip/compile V=s
 
 `FAKESIP_SRC_DIR` builds the package from your local working tree. Without it,
 the recipe fetches the pinned fork commit in `openwrt/fakesip/Makefile`. The
-current core package release is `0.9.1-r17`, pinned to commit
+The core and LuCI packages use the same release version, `0.9.1-r18`, pinned to commit
 `ebe90f7fb191e0fc292006b0da3f28c5ef4a8da5`, so a normal SDK build includes the
 same payload rotation fix as this working tree.
 
 The package artifact is written under `bin/packages/`.
 
+For OpenWrt 24.10 and older, the repository includes a helper that temporarily
+adds both local recipes to a matching SDK, uses a package-only build selection,
+builds native IPK packages, restores the SDK `.config`, and copies the packages
+out:
+
+```sh
+./tools/build-openwrt-ipk.sh /path/to/openwrt-sdk /tmp/fakesip-ipk
+```
+
+Use an SDK for the exact target and release of the router. The helper refuses
+to overwrite an existing `package/fakesip` or
+`package/luci-app-fakesip` directory in the SDK. Official SDK archives do not
+necessarily contain checked-out feeds; install the feeds before running the
+helper:
+
+```sh
+cd /path/to/openwrt-sdk
+./scripts/feeds update base packages luci
+./scripts/feeds install -a -p base
+./scripts/feeds install -a -p packages
+./scripts/feeds install -a -p luci
+```
+
 Runtime prerequisites on the router:
 
-- `nft` command from `nftables-json` or `nftables-nojson`
-- NFQUEUE kernel support, usually `kmod-nft-queue`
-- LuCI installed before installing `luci-app-fakesip`
+- all releases: `libnetfilter-queue`, `libnfnetlink`, `libmnl`, and
+  `kmod-nfnetlink-queue`
+- firewall4 releases: `nftables-json` (or `nftables-nojson`) and
+  `kmod-nft-queue`
+- firewall3/iptables releases: `iptables`, `ip6tables`,
+  `iptables-mod-nfqueue`, and `iptables-mod-conntrack-extra`
+- LuCI releases: `luci-base` and `rpcd-mod-file` before installing
+  `luci-app-fakesip`
 
 ## Install On OpenWrt
 
@@ -66,6 +116,20 @@ ssh root@192.168.1.1
 opkg install /tmp/fakesip_*.ipk
 opkg install /tmp/luci-app-fakesip_*.ipk
 ```
+
+On OpenWrt 23.05/22.03, leave `use_iptables` at `0` and make sure the
+firewall4 NFQUEUE module is installed. On OpenWrt 19.07/21.02, install the
+iptables NFQUEUE and `connbytes` extensions above, then select the iptables
+backend:
+
+```sh
+uci set fakesip.main.use_iptables='1'
+uci commit fakesip
+/etc/init.d/fakesip restart
+```
+
+If an image uses a non-default firewall backend, follow the runtime package
+list for the backend actually installed instead of the release default.
 
 ## Configure And Run
 

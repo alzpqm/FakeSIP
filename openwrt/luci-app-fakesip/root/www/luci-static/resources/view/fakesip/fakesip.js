@@ -230,12 +230,43 @@ function validateHopSettings(sectionId, value) {
 	return true;
 }
 
+function getSectionOptionUIElement(section, sectionId, optionName) {
+	var element;
+
+	if (section && typeof section.getUIElement === 'function')
+		element = section.getUIElement(sectionId, optionName);
+
+	if (element && typeof element.triggerValidation === 'function')
+		return element;
+
+	/* LuCI 19.07 exposes option UI elements through section children. */
+	if (section && Array.isArray(section.children)) {
+		for (var i = 0; i < section.children.length; i++) {
+			var child = section.children[i];
+			if (child.option === optionName &&
+			    typeof child.getUIElement === 'function')
+				return child.getUIElement(sectionId);
+		}
+	}
+
+	return null;
+}
+
 function triggerValidation(section, sectionId, optionNames) {
 	optionNames.forEach(function(optionName) {
-		var element = section.getUIElement(sectionId, optionName);
-		if (element)
+		var element = getSectionOptionUIElement(section, sectionId, optionName);
+		if (element && typeof element.triggerValidation === 'function')
 			element.triggerValidation();
 	});
+}
+
+function notifyServiceSuccess(message) {
+	var node = E('p', message);
+
+	if (typeof ui.addTimeLimitedNotification === 'function')
+		ui.addTimeLimitedNotification(null, node, 5000, 'info');
+	else
+		ui.addNotification(null, node, 'info');
 }
 
 function revalidate(section, optionNames) {
@@ -339,9 +370,9 @@ return view.extend({
 					: _('FakeSIP did not stop.'));
 			}
 
-			ui.addTimeLimitedNotification(null, E('p', targetState === STATUS_RUNNING
+			notifyServiceSuccess(targetState === STATUS_RUNNING
 				? _('FakeSIP is running.')
-				: _('FakeSIP is stopped.')), 5000, 'info');
+				: _('FakeSIP is stopped.'));
 		}, this)).catch(function(error) {
 			ui.addNotification(null,
 				E('p', _('Service command failed: %s').format(error.message)),
