@@ -93,6 +93,12 @@ FAKESIP_VERSION=$(pkg_field "$ROOT_DIR/openwrt/fakesip/Makefile" PKG_VERSION)
 FAKESIP_RELEASE=$(pkg_field "$ROOT_DIR/openwrt/fakesip/Makefile" PKG_RELEASE)
 LUCI_VERSION=$(pkg_field "$ROOT_DIR/openwrt/luci-app-fakesip/Makefile" PKG_VERSION)
 LUCI_RELEASE=$(pkg_field "$ROOT_DIR/openwrt/luci-app-fakesip/Makefile" PKG_RELEASE)
+LUCI_MAKE_ARCH=$(pkg_field "$ROOT_DIR/openwrt/luci-app-fakesip/Makefile" PKGARCH)
+
+[ -n "$LUCI_MAKE_ARCH" ] || {
+    echo "missing LuCI PKGARCH" >&2
+    exit 1
+}
 
 BUILD_DIR=${BUILD_DIR:-"/tmp/fakesip-openwrt-apk-build"}
 FAKESIP_ROOT="$BUILD_DIR/fakesip-root"
@@ -113,7 +119,7 @@ make -C "$ROOT_DIR" \
     VERSION="$FAKESIP_VERSION-openwrt"
 
 install -m 0755 "$ROOT_DIR/build/fakesip" "$FAKESIP_ROOT/usr/bin/fakesip"
-install -m 0644 "$ROOT_DIR/openwrt/fakesip/files/fakesip.config" \
+install -m 0600 "$ROOT_DIR/openwrt/fakesip/files/fakesip.config" \
     "$FAKESIP_ROOT/etc/config/fakesip"
 install -m 0755 "$ROOT_DIR/openwrt/fakesip/files/fakesip.init" \
     "$FAKESIP_ROOT/etc/init.d/fakesip"
@@ -146,6 +152,8 @@ make_pkg_metadata "$LUCI_ROOT" luci-app-fakesip
 make_default_scripts "$LUCI_SCRIPTS" luci-app-fakesip
 chown -R 0:0 "$LUCI_ROOT"
 
+# OpenWrt's APK architecture list is target-specific. Even LuCI-only packages
+# must use the target ARCH on images whose /etc/apk/arch omits `all`.
 "$APK" mkpkg \
     --info "name:luci-app-fakesip" \
     --info "version:$LUCI_VERSION-r$LUCI_RELEASE" \

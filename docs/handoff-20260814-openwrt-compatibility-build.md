@@ -1,7 +1,7 @@
 # FakeSIP OpenWrt Build Handoff
 
 Date: 2026-08-14 (Asia/Taipei)
-Repository: /Users/sirtungshenghsiao/Documents/fakesip
+Repository: <local-fakesip-worktree>
 Implementation commit: 0a27d0080ffe3794db1030e37bfbfdf120048b15
 Planned release tag: v0.9.1-openwrt-r18
 
@@ -28,7 +28,7 @@ local packages with NO_DEPS=1.
 
 Artifacts are stored under:
 
-/Users/sirtungshenghsiao/Documents/fakesip-artifacts/openwrt-0.9.1-r18-20260814
+<local-artifact-dir>/openwrt-0.9.1-r18-20260814
 
 SHA-256 values:
 

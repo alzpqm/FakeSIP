@@ -574,6 +574,7 @@ return view.extend({
 		profileOption.value('china_unicom', _('China Unicom IMS'));
 		profileOption.value('china_telecom', _('China Telecom IMS'));
 		profileOption.value('china_all', _('Rotate Chinese carrier IMS'));
+		profileOption.value('china_sip_observed', _('Rotate observed SIP/RCS 5260 (experimental)'));
 		profileOption.value('custom', _('Custom SIP URI'));
 		profileOption.default = 'china_all';
 		profileOption.validate = validateSipProfile;

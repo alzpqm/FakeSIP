@@ -1,7 +1,7 @@
 # FakeSIP OpenWrt Runtime Handoff
 
 Date: 2026-08-14 (Asia/Taipei)
-Repository: /Users/sirtungshenghsiao/Documents/fakesip
+Repository: <local-fakesip-worktree>
 Implementation commit: 0a27d0080ffe3794db1030e37bfbfdf120048b15
 Planned release tag: v0.9.1-openwrt-r18
 
@@ -9,7 +9,7 @@ Planned release tag: v0.9.1-openwrt-r18
 
 Target:
 
-- Host: 192.168.9.1 port 33501
+- Host: <openwrt-router> port <router-ssh-port>
 - OpenWrt: 25.12.5 r33051-f5dae5ece4
 - Target: x86/64
 - Kernel: 6.12.94
@@ -22,7 +22,7 @@ Before installation, the router backup directory was created at:
 
 The same archive was copied through Debian to the local artifact directory:
 
-/Users/sirtungshenghsiao/Documents/fakesip-artifacts/openwrt-0.9.1-r18-20260814/router/fakesip-backup-20260814-r18.tgz
+<local-artifact-dir>/openwrt-0.9.1-r18-20260814/router/fakesip-backup-20260814-r18.tgz
 
 The backup archive SHA-256 is
 46cc694c5d2bab78bab3db68c2d006b681c9c68b85c8f383cfa6494935537ff4.

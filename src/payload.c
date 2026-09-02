@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <limits.h>
 
 #include "logging.h"
@@ -106,6 +107,61 @@ static unsigned long make_random_ulong(void)
     return value;
 }
 
+static int host_equals(const char *host, size_t host_len, const char *expected)
+{
+    size_t expected_len;
+
+    expected_len = strlen(expected);
+    return host_len == expected_len &&
+           strncasecmp(host, expected, expected_len) == 0;
+}
+
+
+static int is_ims_sip_uri(const char *sip_uri)
+{
+    static const char suffix[] = ".3gppnetwork.org";
+
+    const char *authority_end, *at, *host, *host_end;
+    size_t host_len, suffix_len;
+
+    if (!sip_uri || strncmp(sip_uri, "sip:", 4) != 0) {
+        return 0;
+    }
+
+    host = sip_uri + 4;
+    authority_end = strpbrk(host, ";?");
+    if (!authority_end) {
+        authority_end = host + strlen(host);
+    }
+
+    at = memchr(host, '@', (size_t) (authority_end - host));
+    if (at) {
+        host = at + 1;
+    }
+
+    if (host >= authority_end || *host == '[') {
+        return 0;
+    }
+
+    host_end = memchr(host, ':', (size_t) (authority_end - host));
+    if (!host_end) {
+        host_end = authority_end;
+    }
+    host_len = (size_t) (host_end - host);
+    if (host_len > 0 && host[host_len - 1] == '.') {
+        host_len--;
+    }
+
+    if (host_equals(host, host_len, "sipcq16.xnq.r.10086.cn") ||
+        host_equals(host, host_len, "sipsc109.r01.rcs.189.cn")) {
+        return 1;
+    }
+
+    suffix_len = sizeof(suffix) - 1;
+    return host_len > suffix_len &&
+           strncasecmp(host + host_len - suffix_len, suffix, suffix_len) == 0;
+}
+
 
 static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
 {
@@ -146,7 +202,7 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
     }
     username = sip_uri + 4;
 
-    is_ims = strstr(sip_uri, ".3gppnetwork.org") != NULL;
+    is_ims = is_ims_sip_uri(sip_uri);
     selected_sdp_fmt = is_ims ? ims_sdp_fmt : sdp_fmt;
     extra_headers = is_ims ? ims_headers : "";
     len_ = snprintf(sdp_buf, sizeof(sdp_buf), selected_sdp_fmt,

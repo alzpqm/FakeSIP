@@ -5,12 +5,12 @@ Observation date: 2026-08-13 Asia/Taipei. Router timestamps below are GMT.
 
 ## Scope
 
-- Repository: `/Users/sirtungshenghsiao/Documents/fakesip`
+- Repository: `<local-fakesip-worktree>`
 - Branch: `codex/fakesip-bug-findings`
 - Repository HEAD before this audit: `0856ee0`
 - Device scope: FakeSIP and queue 513 only.
-- Router access path: Mac -> Debian `192.168.9.190` -> OpenWrt
-  `192.168.9.1:33501`.
+- Router access path: Mac -> Debian `<debian-jump-host>` -> OpenWrt
+  `<openwrt-router>:<router-ssh-port>`.
 
 ## Observed Router State
 

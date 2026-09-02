@@ -239,6 +239,10 @@ assert(source.indexOf("widgets.NetworkSelect, 'network', _('Interfaces')") >= 0,
 	'OpenWrt network selector is not aligned with the FakeHTTP interface label');
 assert(source.indexOf('isRedundantIpv6Network(this.networks, value)') >= 0,
 	'redundant IPv6 companion networks are not filtered');
+assert(source.indexOf("profileOption.value('china_sip_observed'") >= 0,
+	'observed carrier SIP rotation profile is missing from LuCI');
+assert(source.indexOf("profileOption.default = 'china_all'") >= 0,
+	'experimental SIP profiles must not replace the production default');
 
 const acl = JSON.parse(fs.readFileSync(aclPath, 'utf8'))['luci-app-fakesip'];
 const readCommands = Object.keys(acl.read.file || {});

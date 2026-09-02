@@ -185,6 +185,14 @@ assert_contains "$LOG_MESSAGES" "custom SIP profile has no URI" \
 	"a custom profile without SIP URIs must be logged"
 
 reset_case
+CFG_sip_profile=china_typo
+CFG_interface=pppoe-wan
+start_instance main
+assert_eq 0 "$PROCD_OPEN" "an unknown SIP profile must not start"
+assert_contains "$LOG_MESSAGES" "has unknown SIP profile 'china_typo'" \
+	"an unknown SIP profile must be logged"
+
+reset_case
 CFG_sip_profile=custom
 CFG_sip_uri=sip:user@example.com
 CFG_interface=pppoe-wan
@@ -210,6 +218,14 @@ start_instance main
 assert_eq 1 "$PROCD_OPEN" "an empty SIP profile must use the standard behavior"
 assert_eq "" "$PROCD_URIS" \
 	"an empty SIP profile must ignore stale custom URIs"
+
+reset_case
+CFG_sip_profile=china_sip_observed
+CFG_interface=pppoe-wan
+start_instance main
+assert_eq 'sip:user@sipcq16.xnq.r.10086.cn:5260 sip:user@sipsc109.r01.rcs.189.cn:5260' \
+	"$PROCD_URIS" \
+	"the observed carrier SIP profile must preserve rotation order"
 
 reset_case
 start_instance main

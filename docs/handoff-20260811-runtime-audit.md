@@ -5,14 +5,14 @@ infer facts that are not listed as observed evidence.
 
 ## Scope
 
-- Repository: `/Users/sirtungshenghsiao/Documents/fakesip`
+- Repository: `<local-fakesip-worktree>`
 - Branch: `codex/fakesip-bug-findings`
 - HEAD at audit start: `0c1717419fb85c356ed6877df047083026798267`
 - Remote: `fork` (`https://github.com/alzpqm/FakeSIP.git`)
 - Device scope: FakeSIP and queue 513 only. Do not read or modify FakeHTTP or
   queue 512 unless the user explicitly changes the boundary.
-- Router access: Debian jump host `192.168.9.190`, then OpenWrt
-  `192.168.9.1:33501`.
+- Router access: Debian jump host `<debian-jump-host>`, then OpenWrt
+  `<openwrt-router>:<router-ssh-port>`.
 
 ## Evidence Rules
 
@@ -32,8 +32,8 @@ infer facts that are not listed as observed evidence.
   OpenWrt source pin/package release update (`0c17174`).
 - Installed OpenWrt core package is `fakesip-0.9.1-r17`.
 - Local deployment and runtime backups:
-  - `/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r17-20260809-0040/`
-  - `/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-30m-nonsilent-backup-20260809-065231/`
+  - `<local-backup-dir>/fakesip-r17-20260809-0040/`
+  - `<local-backup-dir>/fakesip-30m-nonsilent-backup-20260809-065231/`
 
 ## Router Snapshot
 

@@ -154,6 +154,80 @@ int main(void)
     fs_payload_cleanup();
 
     {
+        struct payload_info observed_carrier_payloads[] = {
+            {FS_PAYLOAD_SIP,
+             "sip:user@sipcq16.xnq.r.10086.cn:5260"},
+            {FS_PAYLOAD_SIP,
+             "sip:user@sipsc109.r01.rcs.189.cn:5260"},
+            {FS_PAYLOAD_END, NULL},
+        };
+        static const char *const expected_uris[] = {
+            "INVITE sip:user@sipcq16.xnq.r.10086.cn:5260 SIP/2.0",
+            "INVITE sip:user@sipsc109.r01.rcs.189.cn:5260 SIP/2.0",
+            "INVITE sip:user@sipcq16.xnq.r.10086.cn:5260 SIP/2.0",
+        };
+        size_t i;
+
+        g_ctx.plinfo = observed_carrier_payloads;
+        if (fs_payload_setup() < 0) {
+            return fail("observed carrier SIP payload setup failed");
+        }
+        for (i = 0; i < sizeof(expected_uris) / sizeof(expected_uris[0]); i++) {
+            if (th_payload_get(&payload, &payload_len) < 0 ||
+                !payload_contains(payload, payload_len, expected_uris[i]) ||
+                !payload_contains(payload, payload_len,
+                                  "\r\nSupported: 199, timer\r\n") ||
+                !payload_contains(payload, payload_len,
+                                  "\r\nUser-Agent: PRD-IR92/18 ") ||
+                !payload_contains(payload, payload_len,
+                                  "\r\na=rtpmap:97 AMR-WB/16000/1\r\n") ||
+                !content_length_matches(payload, payload_len)) {
+                fs_payload_cleanup();
+                return fail("observed carrier SIP payload is not IMS-style");
+            }
+        }
+        fs_payload_cleanup();
+    }
+
+    {
+        struct payload_info host_boundary_payloads[] = {
+            {FS_PAYLOAD_SIP,
+             "sip:user@sipcq16.xnq.r.10086.cn.evil:5260"},
+            {FS_PAYLOAD_SIP,
+             "sip:user@ims.mnc000.mcc460.3gppnetwork.org.evil"},
+            {FS_PAYLOAD_SIP,
+             "sip:user@example.com?subject=@sipcq16.xnq.r.10086.cn"},
+            {FS_PAYLOAD_SIP,
+             "sip:user@SIPCQ16.XNQ.R.10086.CN:5260;transport=udp"},
+            {FS_PAYLOAD_SIP,
+             "sip:user@IMS.MNC000.MCC460.3GPPNETWORK.ORG.:5260"},
+            {FS_PAYLOAD_END, NULL},
+        };
+        static const int expected_ims[] = {0, 0, 0, 1, 1};
+        size_t i;
+
+        g_ctx.plinfo = host_boundary_payloads;
+        if (fs_payload_setup() < 0) {
+            return fail("SIP host-boundary payload setup failed");
+        }
+        for (i = 0; i < sizeof(expected_ims) / sizeof(expected_ims[0]); i++) {
+            int has_ims_headers;
+
+            if (th_payload_get(&payload, &payload_len) < 0) {
+                fs_payload_cleanup();
+                return fail("SIP host-boundary payload rotation failed");
+            }
+            has_ims_headers = payload_contains(
+                payload, payload_len, "\r\nSupported: 199, timer\r\n");
+            if (has_ims_headers != expected_ims[i]) {
+                fs_payload_cleanup();
+                return fail("SIP IMS classification ignored host boundaries");
+            }
+        }
+        fs_payload_cleanup();
+    }
+
+    {
         struct payload_info rotation_payloads[] = {
             {FS_PAYLOAD_SIP, "sip:first@ims.mnc000.mcc460.3gppnetwork.org"},
             {FS_PAYLOAD_SIP, "sip:second@ims.mnc001.mcc460.3gppnetwork.org"},

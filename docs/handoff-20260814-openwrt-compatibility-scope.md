@@ -1,7 +1,7 @@
 # FakeSIP OpenWrt Compatibility Handoff
 
 Date: 2026-08-14 (Asia/Taipei)
-Repository: /Users/sirtungshenghsiao/Documents/fakesip
+Repository: <local-fakesip-worktree>
 Branch: codex/fakesip-bug-findings
 Implementation commit: 0a27d0080ffe3794db1030e37bfbfdf120048b15
 Planned release tag: v0.9.1-openwrt-r18
@@ -40,6 +40,6 @@ OpenWrt 25.12.5 x86_64 APK. Other releases in the compatibility matrix still
 require a matching SDK and target package feeds before deployment. No claim is
 made for another architecture without building that target.
 
-The install test used the Debian jump host and router 192.168.9.1:33501. It
+The install test used the Debian jump host and router <openwrt-router>:<router-ssh-port>. It
 did not stop, restart, read, or modify FakeHTTP or queue 512. Only FakeSIP and
 queue 513 were changed during installation.

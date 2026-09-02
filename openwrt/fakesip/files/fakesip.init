@@ -74,6 +74,12 @@ append_sip_payloads() {
 			procd_append_param command -u \
 				'sip:user@ims.mnc003.mcc460.3gppnetwork.org'
 			;;
+		china_sip_observed)
+			procd_append_param command -u \
+				'sip:user@sipcq16.xnq.r.10086.cn:5260'
+			procd_append_param command -u \
+				'sip:user@sipsc109.r01.rcs.189.cn:5260'
+			;;
 		custom)
 			config_list_foreach "$section" sip_uri append_list_arg -u
 			;;
@@ -152,6 +158,14 @@ start_instance() {
 	fi
 
 	config_get sip_profile "$section" sip_profile standard
+	case "$sip_profile" in
+		standard|''|china_mobile|china_unicom|china_telecom|china_all|china_sip_observed|custom)
+			;;
+		*)
+			logger -t fakesip "section '$section' has unknown SIP profile '$sip_profile'"
+			return 0
+			;;
+	esac
 	if [ "$sip_profile" = custom ] &&
 	   ! has_list_values "$section" sip_uri; then
 		logger -t fakesip "section '$section' custom SIP profile has no URI"

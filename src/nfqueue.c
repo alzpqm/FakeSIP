@@ -65,6 +65,33 @@ static void error_backoff(unsigned int error_count)
     }
 }
 
+
+static int copy_packet_hwaddr(struct sockaddr_ll *sll,
+                              const struct nfqnl_msg_packet_hw *hwph)
+{
+    unsigned int hwaddr_len;
+
+    if (!sll) {
+        return -1;
+    }
+
+    sll->sll_halen = 0;
+    memset(sll->sll_addr, 0, sizeof(sll->sll_addr));
+    if (!hwph) {
+        return 0;
+    }
+
+    hwaddr_len = ntohs(hwph->hw_addrlen);
+    if (hwaddr_len > sizeof(sll->sll_addr)) {
+        E("ERROR: invalid hardware address length: %u", hwaddr_len);
+        return -1;
+    }
+
+    sll->sll_halen = (unsigned char) hwaddr_len;
+    memcpy(sll->sll_addr, hwph->hw_addr, hwaddr_len);
+    return 0;
+}
+
 static int callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
                     struct nfq_data *nfa, void *data)
 {
@@ -112,12 +139,8 @@ static int callback(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 
     /* hwph can be null on PPP interfaces or POSTROUTING packets */
     hwph = nfq_get_packet_hw(nfa);
-    if (hwph) {
-        sll.sll_halen = sizeof(hwph->hw_addr);
-        memcpy(sll.sll_addr, hwph->hw_addr, sizeof(hwph->hw_addr));
-    } else {
-        sll.sll_halen = 0;
-        memset(sll.sll_addr, 0, sizeof(sll.sll_addr));
+    if (copy_packet_hwaddr(&sll, hwph) < 0) {
+        goto ret_accept;
     }
 
     verdict = fs_rawsend_handle(&sll, pkt_data, pkt_len, &modified);

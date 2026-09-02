@@ -358,7 +358,7 @@ Router-side backup:
 Mac-side backup:
 
 ```text
-/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-backup-20260704-212905.tgz
+<local-backup-dir>/fakesip-backup-20260704-212905.tgz
 ```
 
 Backup tarball SHA-256:
@@ -452,14 +452,14 @@ configuration.
 Mac-side backup from the temporary bypass test:
 
 ```text
-/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-backup-20260704-212905-quic-bypass.tgz
+<local-backup-dir>/fakesip-backup-20260704-212905-quic-bypass.tgz
 sha256: bc12170388d6cb9b5fb0d394c58580a7e0f82ebd900b39d56d3679b123d8a987
 ```
 
 Mac-side backup after reverting to global no-bypass mode:
 
 ```text
-/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-backup-20260704-212905-global-no-bypass.tgz
+<local-backup-dir>/fakesip-backup-20260704-212905-global-no-bypass.tgz
 sha256: d707d7d985dfce263262c70a7ca761a6c9cad0febb1fccee4402fc4b3755d331
 ```
 
@@ -519,7 +519,7 @@ showed that the global rule was processing sustained P2P-style UDP traffic even
 while the foreground test used HTTPS/TCP. The saved log is:
 
 ```text
-/Users/sirtungshenghsiao/Documents/fakesip-backups/download-diag-20260726-053654Z/fakesip-download-diag.log
+<local-backup-dir>/download-diag-20260726-053654Z/fakesip-download-diag.log
 sha256: 080ae20cfdbdb28edc2a4cb9b42daa58659bcd01fd1e9f13136e059e80531c67
 ```
 
@@ -653,7 +653,7 @@ The same archive, r14/r6 APKs, source archive, and complete Git bundle are also
 stored under:
 
 ```text
-/Users/sirtungshenghsiao/Documents/fakesip-backups/ims-r14-20260726-072516Z/
+<local-backup-dir>/ims-r14-20260726-072516Z/
 ```
 
 #### OpenWrt r15 reliability and LuCI deployment
@@ -711,7 +711,7 @@ files-r14.tgz sha256: 312bd2f48a1e0b2f0d839c90992b917306053a308803c3c09d49f98583
 The local release backup is retained under:
 
 ```text
-/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r15-release-20260729-103704/
+<local-backup-dir>/fakesip-r15-release-20260729-103704/
 ```
 
 #### OpenWrt r16 WAN-selection and LuCI consistency deployment
@@ -778,7 +778,7 @@ sha256: 70284e6e3764cb3605ea31b14f122ae99e5047802c7908adf1a1f92c2d9fe08b
 The local APK and router archives are under:
 
 ```text
-/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-r16-release-20260729-150049/
+<local-backup-dir>/fakesip-r16-release-20260729-150049/
 ```
 
 ### LuCI r11 collapses duplicate IPv6 companion WANs
@@ -814,8 +814,144 @@ sha256: ebff3087f7a180bc602d0e80a632105e43b0848f877aca1f8478bc823baca80e
 /root/fakesip-luci-r11-pre-20260729-1846.tgz
 sha256: c1ad5900b4ac320ff1dfd47576d1f2a812e3842c0949dc617cd74b7b2b565b9f
 
-/Users/sirtungshenghsiao/Documents/fakesip-backups/fakesip-luci-r11-20260729-1845/
+<local-backup-dir>/fakesip-luci-r11-20260729-1845/
 ```
+
+## 2026-08-24 r19 Candidate Audit
+
+This audit started from the dirty r19 observed-SIP worktree. It preserved the
+two-host experimental profile and added focused hardening without changing the
+default `china_all` profile. The candidate source is not committed, pushed,
+tagged, released, or installed on the router.
+
+### IMS SIP detection accepted lookalike host text
+
+File: `src/payload.c`
+
+IMS payload selection used `strstr(sip_uri, ".3gppnetwork.org")`. A lookalike
+host such as `ims.mnc000.mcc460.3gppnetwork.org.evil` therefore received IMS
+headers and AMR SDP. The new observed hosts also needed exact classification
+without turning a query string or attacker-controlled suffix into an IMS match.
+
+The fix parses the SIP authority, userinfo boundary, host, optional port,
+parameters, query, and trailing dot. Matching is case-insensitive but limited
+to the two exact observed hosts or a real `.3gppnetwork.org` host suffix.
+Regression cases cover lookalike suffixes, query text, upper case, ports,
+parameters, and trailing dots.
+
+### Raw-send setup opened sockets unused by the selected mode
+
+File: `src/rawsend.c`
+
+Setup always opened AF_PACKET, IPv4 raw, and IPv6 raw sockets. An outbound-only
+configuration therefore depended on two raw IP sockets it never used, and an
+IPv4-only configuration could fail because an unused IPv6 socket failed.
+
+Setup now follows the real send paths: outbound fake packets require AF_PACKET;
+inbound IPv4 and IPv6 fake packets require only their selected raw IP sockets.
+Cleanup also clears cached bind indices. Unit tests cover outbound-only,
+inbound IPv4-only, inbound IPv6-only, and bidirectional dual-stack selections.
+Two Debian runtime processes each used five descriptors in the single-socket
+modes and exited normally.
+
+### NFQUEUE hardware-address length was forced to eight bytes
+
+File: `src/nfqueue.c`
+
+The callback copied the complete eight-byte storage array and set
+`sockaddr_ll.sll_halen` to eight whenever NFQUEUE supplied a hardware address.
+Ethernet addresses are normally six bytes, and `hw_addrlen` is network ordered.
+
+The new helper converts `hw_addrlen` with `ntohs()`, validates it against
+`sll_addr`, copies only the real bytes, clears stale bytes, and accepts a NULL
+address for PPP/postrouting packets. An invalid oversized address now accepts
+the original queued packet without attempting fake transmission. Focused tests
+cover six-byte, NULL, and oversized inputs.
+
+### Logger assumed time conversion and log stream always succeeded
+
+File: `src/logging.c`
+
+The logger passed the unchecked result of `localtime()` to `strftime()` and
+wrote through `g_ctx.logfp` without a local fallback. A failed time conversion
+or an early diagnostic before logger setup could dereference NULL.
+
+The fix uses `localtime_r()`, checks both time conversion and formatting,
+provides a deterministic fallback timestamp, and uses `stderr` when no stream
+is configured. The logging regression injects time-conversion failure and
+verifies both formatted and raw logger paths.
+
+### Unknown OpenWrt SIP profiles silently fell back to standard payloads
+
+File: `openwrt/fakesip/files/fakesip.init`
+
+An unknown `sip_profile` reached `append_sip_payloads()`, logged an error, but
+could still open a procd instance without any `-u` option. The program then
+used its standard payload, contrary to the configured profile name.
+
+The init script now validates the complete known-profile set before opening an
+instance. An unknown value is logged and no process is created. The init
+behavior suite contains a typo-profile regression.
+
+### OpenWrt 25 APK config permissions differed from IPK and the router
+
+File: `tools/build-openwrt-apk.sh`
+
+The direct APK builder installed `/etc/config/fakesip` as mode 0644, while the
+OpenWrt package recipe uses `INSTALL_CONF` and the live router uses 0600. The
+APK builder now installs mode 0600. Final 22.03 IPK and 25.12 APK extraction
+both reported mode 0600 and root ownership.
+
+### LuCI package architecture declaration did not reach package metadata
+
+Files: `openwrt/luci-app-fakesip/Makefile` and
+`tools/build-openwrt-apk.sh`
+
+The IPK feed package keeps `PKGARCH:=all` for LuCI, but the OpenWrt 25 router's
+`/etc/apk/arch` contains only `x86_64`. The first direct APK builder propagated
+`all` into the LuCI APK and the real router rejected the transaction as
+uninstallable. The builder now validates the Makefile field for the IPK path but
+emits the target `ARCH` for both direct APKs. The corrected x86_64 APK pair was
+accepted and installed on the router.
+
+### Verification matrix and candidate artifacts
+
+The exact C source hashes passed Debian debug build, full CLI/core regression,
+ASan/LSan/UBSan unit tests, GCC `-fanalyzer`, namespace smoke, nft rollback,
+and two raw-socket runtime modes. Local init, LuCI, package, syntax, and diff
+gates passed. OpenWrt 22.03.7 and 25.12.5 x86_64/musl builds both completed.
+Package integrity, dependency metadata, architecture, root ownership, modes,
+source-file identity, and packaged binary markers were checked after extraction.
+
+```text
+646079ff637a90ae3b171450e6f1d73a12d3365457010fb435e5c042a4742f2c  fakesip_0.9.1-19_x86_64.ipk
+49595cf533d75b741b4f2ab521b6ca9927cbbc217f893aaa215d45150abb985b  luci-app-fakesip_0.9.1-19_all.ipk
+62b48d096c056169bbce945a7043c60020b125b3e6f2b5b9972725ff0097dfd9  rejected-arch-all-fakesip-0.9.1-r19.apk
+6a923dfdb7d97e515adc9c902ffc5dea4f0f72e9f231ce4a25776d90c24b1df5  rejected-arch-all-luci-app-fakesip-0.9.1-r19.apk
+ae9ccb82225e093dc415b80e3a015a3355004b0d47e4cf72e9e58d7655322713  fakesip-0.9.1-r19-targetarch.apk
+2541c05fd04ccd1086e1379272a45b8d5da68a18b5296b2c36f033f55e18a8c9  luci-app-fakesip-0.9.1-r19-targetarch.apk
+```
+
+The candidate artifacts exist on Debian and under
+`<local-artifact-dir>/audit-20260824-r19-candidate`.
+The combined archive SHA-256 is
+`3194a589a6d7fd1ae1f11e85fbfbedc7243461b94754b852ff9a8809187e442e`.
+
+The corrected target-architecture pair is installed on the router. The valid
+queue513-only window ran for exactly 2700 seconds with 46 samples: PID 17223
+remained constant, queue sequence advanced from 3021 to 18006, backlog/kernel/user
+drops stayed zero, RSS stayed 904 kB, VmSize 1148 kB, threads 1, FDs 5, and CPU
+increased by 39 ticks. All three PPP interfaces reported zero RX/TX errors and
+drops. The complete local monitor log is
+`<local-artifact-dir>/audit-20260824-r19-candidate/monitor/fakesip-r19-45m-20260824-corrected.log`
+with SHA-256
+`7b5b37887a8d591ecf93a23f080b5b2777ea4d097511ea59fe7317aa4b4ce32e`.
+
+At this audit checkpoint, formal release was blocked because
+`PKG_SOURCE_VERSION` still pointed to an older committed revision while the
+fixes were uncommitted. A fetched-source build could not reproduce the direct
+worktree candidate. The release procedure must first commit the functional
+source, pin the recipe to that commit, and repeat fetched-source package checks.
 
 ## Downgraded Or Unconfirmed Findings
 

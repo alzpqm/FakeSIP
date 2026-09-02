@@ -31,6 +31,8 @@ build_test test_srcinfo \
 build_test test_process \
     "$ROOT_DIR/src/process.c" "$ROOT_DIR/src/globvar.c" \
     "$ROOT_DIR/src/logging.c"
+build_test test_logging \
+    "$ROOT_DIR/src/globvar.c"
 build_test test_nfrules \
     "$ROOT_DIR/src/nfrules.c" "$ROOT_DIR/src/globvar.c" \
     "$ROOT_DIR/src/logging.c"
@@ -42,6 +44,13 @@ if [ "$(uname -s)" = Linux ]; then
         -Wl,--gc-sections -lnetfilter_queue -lnfnetlink -lmnl \
         -o "$WORK_DIR/test_rawsend"
     "$WORK_DIR/test_rawsend"
+
+    "$CC" $CFLAGS -ffunction-sections -fdata-sections \
+        -I"$ROOT_DIR/include" "$ROOT_DIR/tests/test_nfqueue.c" \
+        "$ROOT_DIR/src/globvar.c" "$ROOT_DIR/src/logging.c" \
+        -Wl,--gc-sections -lnetfilter_queue -lnfnetlink -lmnl \
+        -o "$WORK_DIR/test_nfqueue"
+    "$WORK_DIR/test_nfqueue"
 fi
 
 FAKESIP=${FAKESIP:-$ROOT_DIR/build/fakesip}

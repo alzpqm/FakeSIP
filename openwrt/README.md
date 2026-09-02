@@ -50,9 +50,9 @@ make package/luci-app-fakesip/compile V=s
 
 `FAKESIP_SRC_DIR` builds the package from your local working tree. Without it,
 the recipe fetches the pinned fork commit in `openwrt/fakesip/Makefile`. The
-The core and LuCI packages use the same release version, `0.9.1-r18`, pinned to commit
-`ebe90f7fb191e0fc292006b0da3f28c5ef4a8da5`, so a normal SDK build includes the
-same payload rotation fix as this working tree.
+core and LuCI packages use the same release version, `0.9.1-r19`. The pinned
+commit is updated as part of the release process so normal SDK builds reproduce
+the released core source.
 
 The package artifact is written under `bin/packages/`.
 
@@ -214,8 +214,8 @@ uci commit fakesip
 ```
 
 Available values are `standard`, `china_mobile`, `china_unicom`,
-`china_telecom`, `china_all`, and `custom`. Custom mode reads one or more
-`sip_uri` list values:
+`china_telecom`, `china_all`, `china_sip_observed`, and `custom`. Custom mode
+reads one or more `sip_uri` list values:
 
 ```sh
 uci set fakesip.main.sip_profile='custom'
@@ -228,6 +228,14 @@ uci commit fakesip
 The carrier profiles use public 3GPP realm syntax and do not contain real
 subscriber identities or IMS credentials. Treat them as test profiles rather
 than proof that a particular carrier prioritizes SIP.
+
+The `china_sip_observed` profile is an experimental two-payload rotation based
+on SIP/RCS endpoints observed on a home network: China Mobile Chongqing
+`sipcq16.xnq.r.10086.cn:5260` and China Telecom Sichuan
+`sipsc109.r01.rcs.189.cn:5260`. FakeSIP embeds those host and port strings in
+an IMS-style INVITE; it does not resolve or connect to either hostname. They
+do not replace the default `china_all` profile and are not evidence of a
+carrier QoS whitelist.
 
 ## Check It
 
