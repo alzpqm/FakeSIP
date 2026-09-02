@@ -56,3 +56,21 @@ The OpenWrt 22.03 SDK emits existing feed/Kconfig type-redefinition and missing 
 dependency warnings. The selected package builds completed with exit 0 and final package
 inspection passed. Debian lacks iptables/ip6tables, so the nft rollback integration was
 run; the iptables rollback path was not newly repeated in this release cycle.
+
+## Published Release Verification
+
+- Release URL:
+  `https://github.com/alzpqm/FakeSIP/releases/tag/v0.9.1-openwrt-r19`.
+- Release state: published, non-draft, non-prerelease.
+- Annotated tag object: `b71650917836a5a6531785714057a3edbcea3344`.
+- Dereferenced tag commit:
+  `af2220a54b81e80af5c56e083bd08f819ab6d9b2`.
+- Remote release inventory: four package assets plus `SHA256SUMS`.
+- All five assets were downloaded from GitHub into a new temporary directory.
+- The four downloaded packages passed the published `SHA256SUMS` file byte for byte.
+- GitHub's asset digest fields match the four package hashes listed above.
+- The release commit and annotated tag use `Codex <codex@local.invalid>` rather than a
+  personal author identity.
+
+The published tag remains immutable. Post-release verification notes and any errors in
+the verification procedure are recorded on the release branch after the tagged commit.

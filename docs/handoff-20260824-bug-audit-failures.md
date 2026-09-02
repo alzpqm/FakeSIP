@@ -734,3 +734,75 @@ not failures.
 - Impact: none. The builder and tests remained at the prior committed state.
 - Correction: apply the builder and smoke-test edits as separate, independently verified
   patches, then run syntax and smoke gates before committing.
+
+## F-044: Release Checksum Verification Ran in the Repository Directory
+
+- Date observed: 2026-09-02
+- Scope: independent download and checksum verification of the published GitHub release
+- Result: `gh release download` placed all assets in a new temporary directory, but the
+  following `sha256sum --check SHA256SUMS` and file listing ran in the repository root.
+  The checksum command therefore reported that `SHA256SUMS` was missing.
+- Cause: the command created and populated `verify_dir` without changing the checksum
+  and listing commands to that directory or passing absolute paths to them.
+- Impact: none to the published assets, repository, or router. The release download
+  completed, but this invocation did not validate the downloaded bytes.
+- Correction: run checksum and inventory commands with the temporary directory as their
+  working directory, or pass absolute paths. Require all five expected assets and four
+  successful checksum lines before declaring remote release verification complete.
+
+## F-045: Base64 Verification Used GNU Syntax and Printed a False Success Line
+
+- Date observed: 2026-09-02
+- Scope: regenerate and verify the failure handoff Base64 copy after F-044
+- Result: encoding completed, but macOS `base64` rejected the GNU-style
+  `--decode FILE` invocation. `cmp` then saw empty input, while a later unconditional
+  `printf` still printed a misleading verified message.
+- Cause: the command mixed GNU and macOS Base64 syntax and separated verification steps
+  with newlines instead of fail-fast `&&` control flow.
+- Impact: no source or release artifact was affected. The Base64 file required a new
+  verification pass, and the printed success line must not be treated as evidence.
+- Correction: use macOS-compatible `base64 -D -i FILE`, connect decode, compare, and
+  success output with `&&`, and regenerate the Base64 again after this new failure entry.
+
+## F-046: Release Handoff Patch Assumed the Wrong Paragraph Wrapping
+
+- Date observed: 2026-09-02
+- Scope: append remote publication verification to the release artifact handoff
+- Result: `apply_patch` rejected the update because its expected context split the final
+  paragraph at a different line than the file actually used.
+- Cause: the patch was composed from a remembered visual wrap instead of copying the
+  exact final lines from the file.
+- Impact: none. `apply_patch` changed no file, and the release artifacts and tag were
+  untouched.
+- Correction: anchor the artifact update to an exact short final sentence copied from
+  the file, keep the failure and artifact patches separate, then regenerate and compare
+  both Base64 copies.
+
+## F-047: Privacy Pattern Flagged Public Examples and Required RFC1918 Rules
+
+- Date observed: 2026-09-02
+- Scope: final tracked-text privacy scan after remote release verification
+- Result: the broad `192.168.x.x` expression matched README examples using the standard
+  OpenWrt address and source rules that intentionally exclude the full RFC1918 /16.
+- Cause: the scan treated every private IPv4 literal as personal data without separating
+  public documentation examples and protocol behavior from known lab-specific values.
+- Impact: none. The command was read-only and correctly stopped, but its findings were
+  false positives rather than privacy leaks.
+- Correction: retain broad key, token, credential URL, and personal path checks; scan
+  specifically for known lab subnets, hosts, ports, aliases, passwords, and project IDs.
+  Review generic private-address matches by context instead of automatically failing.
+
+## F-048: Privacy Scan Conflated PPPoE Device Names With SSH Aliases
+
+- Date observed: 2026-09-02
+- Scope: corrected final tracked-text privacy scan
+- Result: the scan matched documented `pppoe-*` interface names across historical runtime
+  evidence and stopped.
+- Cause: the pattern incorrectly treated network device names as equivalent to SSH host
+  aliases. The privacy handoff's alias category refers to login/jump-host aliases, while
+  PPPoE names are non-authenticating service configuration evidence.
+- Impact: none. The command was read-only. No credential or personal identifier was
+  exposed by these matches, but the scan required a more precise classification.
+- Correction: remove PPPoE device names from the automatic secret gate, continue scanning
+  known SSH aliases and lab endpoints, and retain the device names as useful reproducible
+  runtime evidence.
