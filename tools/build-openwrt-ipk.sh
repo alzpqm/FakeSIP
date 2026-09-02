@@ -319,6 +319,14 @@ grep -Eq "^CONFIG_PACKAGE_${FIREWALL_PACKAGE}=y$" "$SDK_DIR/.config"
 printf 'OpenWrt SDK selection: ALL_KMODS=%s ALL_NONSHARED=%s ALL=%s\n' \
     "$ALL_KMODS" "$ALL_NONSHARED" "$ALL_PACKAGES"
 
+# Package path changes do not always invalidate SDK stamps or old IPKs. Clean
+# both local packages so control metadata is regenerated from the copied recipe.
+FAKESIP_SRC_DIR="$ROOT_DIR" make -C "$SDK_DIR" \
+    NO_DEPS=1 \
+    package/fakesip/clean \
+    package/luci-app-fakesip/clean \
+    V="$V"
+
 FAKESIP_SRC_DIR="$ROOT_DIR" make -C "$SDK_DIR" \
     package/feeds/base/libmnl/compile \
     package/feeds/base/libnfnetlink/compile \
