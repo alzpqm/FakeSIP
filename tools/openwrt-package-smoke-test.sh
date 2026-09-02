@@ -155,6 +155,8 @@ require_grep 'install -m 0600 .*fakesip.config' "$ROOT_DIR/tools/build-openwrt-a
 require_grep 'LUCI_MAKE_ARCH=\$\(pkg_field .* PKGARCH\)' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 require_grep '--info "arch:\$ARCH"' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 forbid_grep '--info "arch:\$LUCI_ARCH"' "$ROOT_DIR/tools/build-openwrt-apk.sh"
+require_grep 'cp -Rp .*openwrt/\$package.*PACKAGE_DIR/\$package' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
+forbid_grep 'ln -s .*openwrt/\$package' "$ROOT_DIR/tools/build-openwrt-ipk.sh"
 require_grep '--script "post-install:' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 require_grep '--script "pre-deinstall:' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 require_grep 'default_postinst' "$ROOT_DIR/tools/build-openwrt-apk.sh"

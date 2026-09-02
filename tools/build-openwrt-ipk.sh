@@ -10,8 +10,8 @@ Usage: $0 <openwrt-sdk-dir> [output-dir]
 Build OpenWrt 24.10 and older IPK packages from this working tree.
 
 The SDK must match the target release and architecture. The script temporarily
-adds the two local package recipes to the SDK, builds them with the OpenWrt
-package system, and removes only the symlinks and temporary SDK configuration
+copies the two local package recipes into the SDK, builds them with the OpenWrt
+package system, and removes only those copies and the temporary SDK configuration
 it created. Existing SDK package selections are restored after the build.
 
 Environment overrides:
@@ -62,7 +62,7 @@ for feed in base packages luci; do
     }
 done
 
-LINKS=""
+PACKAGES_CREATED=""
 BACKUP_DIR="${TMPDIR:-/tmp}/fakesip-ipk.$$"
 mkdir -p "$BACKUP_DIR"
 CONFIG_BACKUP="$BACKUP_DIR/config"
@@ -79,8 +79,8 @@ CLEANED_UP=0
 cleanup() {
     [ "$CLEANED_UP" -eq 0 ] || return 0
     CLEANED_UP=1
-    for package in $LINKS; do
-        rm -f "$PACKAGE_DIR/$package"
+    for package in $PACKAGES_CREATED; do
+        rm -rf "$PACKAGE_DIR/$package"
     done
     if [ "$CONFIG_WAS_PRESENT" -eq 1 ]; then
         mv -f "$CONFIG_BACKUP" "$SDK_DIR/.config"
@@ -117,8 +117,8 @@ for package in fakesip luci-app-fakesip; do
         echo "remove it or use a clean SDK before running this helper" >&2
         exit 1
     fi
-    ln -s "$ROOT_DIR/openwrt/$package" "$PACKAGE_DIR/$package"
-    LINKS="$LINKS $package"
+    cp -Rp "$ROOT_DIR/openwrt/$package" "$PACKAGE_DIR/$package"
+    PACKAGES_CREATED="$PACKAGES_CREATED $package"
 done
 
 mkdir -p "$OUT_DIR"
