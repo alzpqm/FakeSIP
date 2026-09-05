@@ -77,6 +77,8 @@ procd_open_instance() {
 procd_set_param() {
 	if [ "$1" = command ]; then
 		PROCD_PROGRAM="$2"
+	elif [ "$1" = term_timeout ]; then
+		PROCD_TERM_TIMEOUT="$2"
 	fi
 }
 
@@ -141,6 +143,7 @@ reset_case() {
 	PROCD_CLOSE=0
 	PROCD_SECTION=
 	PROCD_PROGRAM=
+	PROCD_TERM_TIMEOUT=
 	PROCD_IFACES=
 	PROCD_URIS=
 	PROCD_ALL=0
@@ -251,6 +254,7 @@ assert_eq 1 "$PROCD_OPEN" "a resolved interface must start one instance"
 assert_eq 1 "$PROCD_CLOSE" "a resolved interface must close one instance"
 assert_eq main "$PROCD_SECTION" "the configured section name must be preserved"
 assert_eq /usr/bin/fakesip "$PROCD_PROGRAM" "the instance must run FakeSIP"
+assert_eq 15 "$PROCD_TERM_TIMEOUT" "the instance must allow bounded graceful cleanup"
 assert_eq "pppoe-wan pppoe-manual" "$PROCD_IFACES" \
 	"resolved and direct interfaces must be ordered and deduplicated"
 

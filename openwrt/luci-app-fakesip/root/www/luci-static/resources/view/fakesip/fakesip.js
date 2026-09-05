@@ -294,10 +294,10 @@ return view.extend({
 
 	statusLabel: function(state) {
 		if (state === STATUS_RUNNING)
-			return { text: _('Running'), cssClass: 'label success' };
+			return { text: _('Running'), cssClass: 'ifacebadge ifacebadge-active' };
 		if (state === STATUS_STOPPED)
-			return { text: _('Stopped'), cssClass: 'label warning' };
-		return { text: _('Unknown'), cssClass: 'label warning' };
+			return { text: _('Stopped'), cssClass: 'ifacebadge' };
+		return { text: _('Unknown'), cssClass: 'ifacebadge' };
 	},
 
 	updateServiceStatus: function(status) {
@@ -308,7 +308,7 @@ return view.extend({
 			return;
 
 		label = this.serviceBusy
-			? { text: _('Working...'), cssClass: 'label warning' }
+			? { text: _('Working...'), cssClass: 'ifacebadge' }
 			: this.statusLabel(this.serviceStatus.state);
 		this.statusNode.className = label.cssClass;
 		this.statusNode.textContent = label.text;
@@ -387,6 +387,8 @@ return view.extend({
 		var button = E('button', {
 			'type': 'button',
 			'class': 'btn cbi-button %s'.format(cssClass),
+			'data-action': action,
+			'aria-label': title,
 			'title': title,
 			'click': L.bind(function(ev) {
 				ev.preventDefault();
@@ -400,23 +402,31 @@ return view.extend({
 
 	renderStatusPanel: function(status) {
 		this.actionButtons = {};
-		this.statusNode = E('span');
+		this.statusNode = E('span', {
+			'class': 'ifacebadge',
+			'aria-live': 'polite'
+		});
 
 		var panel = E('div', { 'class': 'cbi-section' }, [
 			E('h3', _('Service')),
-			E('div', { 'class': 'cbi-value' }, [
-				E('label', { 'class': 'cbi-value-title' }, _('Status')),
-				E('div', { 'class': 'cbi-value-field' }, this.statusNode)
-			]),
-			E('div', { 'class': 'cbi-page-actions' }, [
-				this.actionButton(_('Start'), _('Start FakeSIP'),
-					'start', 'cbi-button-positive'),
-				' ',
-				this.actionButton(_('Restart'), _('Restart FakeSIP'),
-					'restart', 'cbi-button-apply'),
-				' ',
-				this.actionButton(_('Stop'), _('Stop FakeSIP'),
-					'stop', 'cbi-button-negative')
+			E('div', { 'class': 'cbi-section-node' }, [
+				E('div', { 'class': 'cbi-value' }, [
+					E('label', { 'class': 'cbi-value-title' }, _('Status')),
+					E('div', { 'class': 'cbi-value-field' }, this.statusNode)
+				]),
+				E('div', {
+					'id': 'fakesip_service_buttons',
+					'class': 'cbi-page-actions'
+				}, [
+					this.actionButton(_('Start'), _('Start FakeSIP'),
+						'start', 'cbi-button-positive'),
+					' ',
+					this.actionButton(_('Restart'), _('Restart FakeSIP'),
+						'restart', 'cbi-button-apply'),
+					' ',
+					this.actionButton(_('Stop'), _('Stop FakeSIP'),
+						'stop', 'cbi-button-negative')
+				])
 			])
 		]);
 
@@ -455,12 +465,13 @@ return view.extend({
 		allInterfacesOption.default = '0';
 		allInterfacesOption.onchange = revalidate(s, [ 'enabled' ]);
 
-		modeOption = s.taboption('basic', form.ListValue, 'interface_mode', _('WAN selection'));
-		modeOption.value('network', _('OpenWrt networks'));
-		modeOption.value('device', _('Linux devices'));
+		modeOption = s.taboption('basic', form.ListValue, 'interface_mode', _('WAN selection method'));
+		modeOption.value('network', _('OpenWrt networks (recommended)'));
+		modeOption.value('device', _('Linux devices (advanced)'));
 		modeOption.value('auto', _('Legacy combined'));
 		modeOption.default = 'network';
 		modeOption.rmempty = false;
+		modeOption.description = _('OpenWrt networks resolve to their active PPPoE devices automatically.');
 		modeOption.depends('all_interfaces', '0');
 		modeOption.cfgvalue = function(sectionId) {
 			return effectiveInterfaceMode(
@@ -470,11 +481,12 @@ return view.extend({
 		};
 		modeOption.onchange = revalidate(s, [ 'enabled' ]);
 
-		networkOption = s.taboption('basic', widgets.NetworkSelect, 'network', _('Interfaces'));
+		networkOption = s.taboption('basic', widgets.NetworkSelect, 'network', _('WAN networks'));
 		networkOption.multiple = true;
 		networkOption.nocreate = true;
 		networkOption.rmempty = true;
 		networkOption.retain = true;
+		networkOption.description = _('IPv6 companion networks that share the same PPP device are included automatically.');
 		networkOption.filter = function(sectionId, value) {
 			var configured = asList(this.map.data.get('fakesip', sectionId, 'network'));
 
@@ -485,12 +497,13 @@ return view.extend({
 		networkOption.depends({ all_interfaces: '0', interface_mode: 'auto' });
 		networkOption.onchange = revalidate(s, [ 'enabled' ]);
 
-		interfaceOption = s.taboption('basic', widgets.DeviceSelect, 'interface', _('Linux devices (advanced)'));
+		interfaceOption = s.taboption('basic', widgets.DeviceSelect, 'interface', _('Linux devices'));
 		interfaceOption.multiple = true;
 		interfaceOption.noaliases = true;
 		interfaceOption.nocreate = false;
 		interfaceOption.rmempty = true;
 		interfaceOption.retain = true;
+		interfaceOption.description = _('Use direct device names only for unusual or legacy configurations.');
 		interfaceOption.depends({ all_interfaces: '0', interface_mode: 'device' });
 		interfaceOption.depends({ all_interfaces: '0', interface_mode: 'auto' });
 		interfaceOption.validate = validateInterfaceList;

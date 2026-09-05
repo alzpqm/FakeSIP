@@ -425,3 +425,53 @@ The 45-minute window is not complete at this snapshot.
   observed.
 - Scope remained FakeSIP and queue 513 only. No other queue, service, route policy, or
   NAT configuration was read or changed.
+
+## 2026-09-05 Long-run Audit Resume
+
+- The audit resumed from branch head `606aef130a957d020131699cb3ecd96d5370967d`.
+- The working tree initially contained only the twelve pre-existing untracked 2026-08-18
+  handoff Markdown/Base64 files; they remain outside the tracked release state.
+- The first router read at `2026-09-05 09:06:27 GMT` reported OpenWrt 25.12.5 and init
+  status `running`, but `pgrep -x fakesip` returned no exact-name PID. This unresolved
+  discrepancy is recorded as F-050 and must be reconciled through procd, queue 513, full
+  command-line, and `/proc` evidence before any source or router change.
+- Current scope remains FakeSIP and queue 513 only. The audit must not read or modify any
+  other NFQUEUE service, mwan policy, or NAT6 configuration.
+- F-050 is resolved as a monitoring-tool false negative: procd, `ps`, queue 513, and
+  `/proc/2432` all agree that FakeSIP is running. PID `2432` owns queue 513 with zero
+  queue depth, kernel drop, and user drop; RSS is `900 kB`, VmSize `1148 kB`, RssAnon
+  `168 kB`, with one thread and five descriptors. Exact-name `pgrep` is not used again.
+- The optional `od` utility was absent during that diagnosis (F-051); no state changed.
+- A 60-second sample kept PID `2432`, start ticks `64048480`, RSS `900 kB`, VmSize
+  `1148 kB`, RssAnon `168 kB`, one thread, and five descriptors unchanged. Queue 513
+  packet ID advanced `460623 -> 460750`; queue depth, kernel drop, and user drop stayed
+  zero. All three PPPoE devices reported zero RX/TX errors and drops.
+- Logread exposed a separate high-risk shutdown event: PID `32057` started at
+  `2026-09-04 20:30:26 GMT`, did not stop on SIGTERM, and was SIGKILLed by procd five
+  seconds later before PID `2432` started. This is F-052 and blocks the next release
+  until the shutdown path is fixed and verified live.
+- A subsequent source-read command missed `src/globvar.h`; the header actually resides at
+  `include/globvar.h`. This read-path error is F-053 and does not alter F-052 evidence.
+- The first isolated Debian shutdown reproducer was invalid because shell operator
+  precedence backgrounded the build AND-list rather than a confirmed FakeSIP process.
+  Its exit 143 is not product evidence; this is recorded as F-054 and must be rerun with
+  synchronous build plus explicit PID/queue ownership checks.
+- The corrected Debian r19 baseline used a confirmed FakeSIP PID and queue 6513 owner;
+  idle SIGTERM exited normally with status 0 in about 103 ms. This proves F-052 is not a
+  universal glibc failure but does not clear the observed OpenWrt/musl restart event.
+- Gemini CLI 0.53.0 was asked to review the current shutdown/LuCI patch but Code Assist
+  again rejected authorization with HTTP 403 before inference. This is F-055; no Gemini
+  review result exists and no further retry is planned in this release cycle.
+- A live LuCI screenshot baseline was attempted through a successful Debian HTTP tunnel,
+  but the Browser runtime had no available browser. This is F-056. The tunnel was closed
+  intentionally; visual verification must rely on DOM/classes, Node tests, and live asset
+  loading unless a supported browser becomes available later.
+- The first direct init-test invocation lacked an explicit shell and failed permission
+  checking while later commands made the batch exit zero. This is F-057; no pass is
+  claimed until a fail-fast `sh tests/test_openwrt_init.sh` run succeeds.
+- A Debian verification transfer then misplaced `tests/test_nfqueue.c` under `src/`, and
+  the production wildcard build failed with duplicate symbols. This is F-058, not a
+  product regression; the exact disposable file must be removed before rerunning.
+- Static review found that `tools/debian-smoke-test.sh` used only `set -u`, allowing a
+  failed `run()` call to be masked by the final successful summary. The harness now uses
+  `set -euo pipefail`; its full corrected run is required before release.

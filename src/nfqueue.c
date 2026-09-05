@@ -21,6 +21,8 @@
 #include "nfqueue.h"
 
 #include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,6 +48,26 @@ static struct nfq_q_handle *qh = NULL;
 
 #define NFQ_MAX_PACKET_ERRORS 20U
 #define NFQ_BACKOFF_MAX_MS    1000U
+#define NFQ_POLL_TIMEOUT_MS    250
+
+static int set_nonblocking(int socket_fd)
+{
+    int flags;
+
+    flags = fcntl(socket_fd, F_GETFL, 0);
+    if (flags < 0) {
+        E("ERROR: fcntl(): F_GETFL: %s", strerror(errno));
+        return -1;
+    }
+
+    if (!(flags & O_NONBLOCK) &&
+        fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+        E("ERROR: fcntl(): F_SETFL: %s", strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
 
 static void error_backoff(unsigned int error_count)
 {
@@ -223,6 +245,10 @@ int fs_nfq_setup(void)
         goto destroy_queue;
     }
 
+    if (set_nonblocking(fd) < 0) {
+        goto destroy_queue;
+    }
+
     opt_len = sizeof(opt);
     res = getsockopt(fd, SOL_SOCKET, SO_RCVBUF, &opt, &opt_len);
     if (res < 0) {
@@ -282,6 +308,7 @@ int fs_nfq_loop(void)
     unsigned int packet_err_cnt, transient_err_cnt;
     ssize_t recv_len;
     char *buff;
+    struct pollfd poll_fd;
 
     buff = malloc(buffsize);
     if (!buff) {
@@ -290,8 +317,33 @@ int fs_nfq_loop(void)
     }
 
     packet_err_cnt = transient_err_cnt = 0;
+    poll_fd.fd = fd;
+    poll_fd.events = POLLIN;
+    poll_fd.revents = 0;
 
     while (!g_ctx.exit) {
+        poll_fd.revents = 0;
+        res = poll(&poll_fd, 1, NFQ_POLL_TIMEOUT_MS);
+        if (res < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            E("ERROR: poll(): %s", strerror(errno));
+            ret = -1;
+            goto free_buff;
+        }
+        if (res == 0 || g_ctx.exit) {
+            continue;
+        }
+        if (poll_fd.revents & POLLNVAL) {
+            E("ERROR: poll(): %s", "invalid NFQUEUE socket");
+            ret = -1;
+            goto free_buff;
+        }
+        if (!(poll_fd.revents & (POLLIN | POLLERR | POLLHUP))) {
+            continue;
+        }
+
         recv_len = recv(fd, buff, buffsize, 0);
         if (recv_len < 0) {
             switch (errno) {

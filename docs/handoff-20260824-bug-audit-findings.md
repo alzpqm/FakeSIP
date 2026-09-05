@@ -235,3 +235,24 @@ cleans both package targets. Final IPKs report only `Source: package/fakesip` an
 Gemini CLI did not review the release because Code Assist authorization returned HTTP
 403 before inference. No Gemini approval is claimed. Executable tests and direct source,
 package, and runtime evidence are the release basis.
+
+## 2026-09-05 Long-run Finding
+
+### High: FakeSIP did not stop within the procd SIGTERM window
+
+Router logread contains a concrete event where PID 32057 started normally, received a
+service stop, and remained alive until procd sent SIGKILL five seconds later. The next
+instance, PID 2432, is healthy and queue 513 currently has zero depth and drops, so this
+is a shutdown-path defect rather than an active forwarding outage.
+
+The next release is blocked until signal handling and the NFQUEUE receive loop are
+reviewed, a deterministic Linux/OpenWrt stop test is added, and live restart evidence
+shows a normal exit without procd SIGKILL.
+
+### Medium: Debian smoke failures could be hidden by the final summary
+
+`tools/debian-smoke-test.sh` used only `set -u`. Its `run()` helper preserved the tested
+command's exit status, but callers did not check that status, so a failed build, core
+test, or nft syntax check could be followed by a successful final summary and make the
+whole script exit zero. The next release changes the harness to `set -euo pipefail` and
+must rerun the complete smoke suite to prove the stricter gate is usable.

@@ -227,6 +227,14 @@ assert(/this\.actionButton\(_\('Restart'\), _\('Restart FakeSIP'\),\s*'restart',
 	'Restart button does not match the FakeHTTP apply style');
 assert(/this\.actionButton\(_\('Stop'\), _\('Stop FakeSIP'\),\s*'stop', 'cbi-button-negative'\)/.test(source),
 	'Stop button does not match the FakeHTTP negative style');
+assert(source.indexOf("cssClass: 'ifacebadge ifacebadge-active'") >= 0,
+	'running status does not match the FakeHTTP active badge style');
+assert(source.indexOf("'id': 'fakesip_service_buttons'") >= 0,
+	'service action group is missing its stable responsive identifier');
+assert(source.indexOf("'class': 'cbi-section-node'") >= 0,
+	'service panel is missing the standard LuCI section body');
+assert(source.indexOf("'aria-live': 'polite'") >= 0,
+	'service status changes are not announced accessibly');
 assert(source.indexOf("form.ListValue, 'interface_mode'") >= 0,
 	'WAN selection mode is missing from LuCI');
 assert(source.indexOf("interface_mode: 'network'") >= 0,
@@ -235,8 +243,12 @@ assert(source.indexOf("interface_mode: 'device'") >= 0,
 	'Linux device selection is not tied to device mode');
 assert(source.indexOf("modeOption.value('auto', _('Legacy combined'))") >= 0,
 	'legacy mixed configurations cannot be represented honestly');
-assert(source.indexOf("widgets.NetworkSelect, 'network', _('Interfaces')") >= 0,
-	'OpenWrt network selector is not aligned with the FakeHTTP interface label');
+assert(source.indexOf("modeOption.value('network', _('OpenWrt networks (recommended)'))") >= 0,
+	'OpenWrt network selection is not presented as the recommended path');
+assert(source.indexOf("modeOption.value('device', _('Linux devices (advanced)'))") >= 0,
+	'direct Linux device selection is not presented as advanced');
+assert(source.indexOf("widgets.NetworkSelect, 'network', _('WAN networks')") >= 0,
+	'OpenWrt network selector is not clearly labeled');
 assert(source.indexOf('isRedundantIpv6Network(this.networks, value)') >= 0,
 	'redundant IPv6 companion networks are not filtered');
 assert(source.indexOf("profileOption.value('china_sip_observed'") >= 0,

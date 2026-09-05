@@ -806,3 +806,145 @@ not failures.
 - Correction: remove PPPoE device names from the automatic secret gate, continue scanning
   known SSH aliases and lab endpoints, and retain the device names as useful reproducible
   runtime evidence.
+
+## F-049: LuCI Review Used an Obsolete Source Path
+
+- Date observed: 2026-09-05
+- Scope: resume the r19 handoff and begin the next LuCI/runtime audit
+- Result: `wc` and `sed` failed because the command addressed
+  `openwrt/luci-app-fakesip/htdocs/.../fakesip.js`, which does not exist in the current
+  package layout.
+- Cause: the review reused an older LuCI source-tree path instead of discovering the
+  current package files first.
+- Impact: none. The commands were read-only; no source, package, or router state changed.
+- Correction: locate package files with `rg --files` before reading them. The current
+  view is under `openwrt/luci-app-fakesip/root/www/luci-static/resources/view/fakesip/`.
+
+## F-050: Initial Long-run Router Snapshot Used an Exact pgrep Name
+
+- Date observed: 2026-09-05
+- Scope: first read-only router snapshot after resuming the r19 long-run audit
+- Result: `/etc/init.d/fakesip status` printed `running`, but the following
+  `pgrep -x fakesip` returned no PID and made the combined command exit 1.
+- Cause: not yet classified at observation time. BusyBox process naming, procd state, and
+  the queue 513 owner must be compared before treating the missing exact-name match as a
+  service failure.
+- Impact: none. The command was read-only and did not restart or modify FakeSIP.
+- Correction: query `ubus service list`, the full `ps` command line, queue 513's owner
+  PID, and `/proc/PID` directly. Do not use a single exact-name `pgrep` as health proof.
+- Resolution: procd, `ps`, queue 513, `/proc/2432/cmdline`, `/proc/2432/comm`, and
+  `/proc/2432/status` all identified the same healthy FakeSIP process. On this image,
+  `pgrep -x fakesip` still returns 1 while `pgrep -f /usr/bin/fakesip` finds the process;
+  exact-name pgrep is therefore excluded from future router health gates.
+
+## F-051: Router Diagnostic Assumed BusyBox Provided od
+
+- Date observed: 2026-09-05
+- Scope: inspect the process-name bytes while resolving F-050
+- Result: OpenWrt printed `ash: od: not found`. The surrounding command continued and
+  `/proc/2432/stat` plus `pgrep -f` output were still collected.
+- Cause: the diagnostic assumed the optional `od` utility was installed on the minimal
+  router image.
+- Impact: none. This was a read-only diagnostic; FakeSIP and queue 513 stayed unchanged.
+- Correction: use BusyBox-guaranteed `/proc` text, `cat`, `tr`, `awk`, and procd data for
+  router monitoring. Do not depend on optional hex-dump tools.
+
+## F-052: procd Had to SIGKILL a FakeSIP Instance After SIGTERM
+
+- Date observed: 2026-09-05 (event occurred 2026-09-04 20:30:26 GMT)
+- Scope: long-run FakeSIP log review before the next release
+- Result: procd logged that PID 32057 did not stop on SIGTERM within five seconds and
+  sent SIGKILL. PID 2432 then started and currently owns queue 513.
+- Cause: under investigation. The signal flag, blocking NFQUEUE receive path, EINTR
+  handling, and procd timeout must be reviewed and reproduced on Linux/OpenWrt.
+- Impact: high-risk shutdown-path failure. The current replacement instance is healthy,
+  but forced termination skips normal cleanup and could leave transient firewall or
+  socket state during restart.
+- Correction: add a deterministic stop/restart regression that requires normal exit
+  before procd's timeout, fix the blocking path if confirmed, and do not publish the next
+  release until the router stops without SIGKILL.
+
+## F-053: Shutdown Review Used the Wrong Header Directory
+
+- Date observed: 2026-09-05
+- Scope: inspect the signal flag type while investigating F-052
+- Result: `sed` reported that `src/globvar.h` did not exist. Other source reads in the
+  same command completed, so the combined command output was incomplete for this point.
+- Cause: the review assumed headers lived beside C files instead of checking the current
+  `include/` layout.
+- Impact: none. The read-only command changed no source or router state.
+- Correction: locate headers with `rg --files` first. The required file is
+  `include/globvar.h`; read it and the NFQUEUE tests before deciding the shutdown fix.
+
+## F-054: Debian Shutdown Reproducer Backgrounded the Build Chain
+
+- Date observed: 2026-09-05
+- Scope: isolate F-052 with a no-firewall queue 6513 process on Debian
+- Result: the command reported exit 143 and no runtime log. Shell precedence made the
+  trailing `&` background the complete `cd && make && fakesip` list, so `$!` identified
+  the background shell/list rather than a proven FakeSIP process.
+- Cause: build and runtime launch were combined in one asynchronous AND-list.
+- Impact: no valid shutdown evidence. The test used unique queue 6513 and `-f`, so it did
+  not install firewall rules or affect the router.
+- Correction: verify no queue/process remains, finish the build synchronously, launch
+  only the FakeSIP executable in the background, confirm `/proc/PID/exe` and queue 6513
+  ownership, then time SIGTERM against that confirmed PID.
+
+## F-055: Gemini Review Was Again Rejected Before Inference
+
+- Date observed: 2026-09-05
+- Scope: requested strict review of the NFQUEUE shutdown and LuCI patch using Gemini CLI
+  0.53.0 with the authorized Google Cloud project environment variable
+- Result: Code Assist onboarding returned HTTP 403 `PERMISSION_DENIED` with error 3501,
+  stating that the account has no valid product license. The command exited 1.
+- Cause: the Workspace/Code Assist entitlement remains unavailable despite the temporary
+  project selection; this is the same external authorization class as F-037.
+- Impact: no Gemini model inference or review result exists. The source diff was not
+  approved by Gemini, and no local or router state changed.
+- Correction: do not retry again in this release cycle. Base decisions on executable
+  regression tests, sanitizers, compiler analysis, package inspection, and live OpenWrt
+  evidence until the user or administrator restores Gemini Code Assist entitlement.
+
+## F-056: No Browser Was Available for the LuCI Visual Baseline
+
+- Date observed: 2026-09-05
+- Scope: inspect the live r19 LuCI page through a Debian-backed local HTTP tunnel
+- Result: the Browser runtime returned `No browser is available` before opening a tab.
+  The SSH tunnel itself started successfully and was then intentionally closed with
+  Ctrl-C; its resulting SSH exit 255 is expected termination, not another failure.
+- Cause: no in-app or connected supported browser instance was available to the Browser
+  runtime in this session.
+- Impact: no screenshot baseline can be claimed. No LuCI setting, service, router file,
+  or queue was changed.
+- Correction: validate the UI through LuCI DOM structure, standard CSS classes, Node
+  behavior tests, syntax checks, package inspection, and live HTTP/asset loading. Only
+  claim screenshot coverage if a supported browser later becomes available.
+
+## F-057: Init Test Was Invoked Without Its Shell and the Batch Still Exited Zero
+
+- Date observed: 2026-09-05
+- Scope: verify the new procd termination timeout and LuCI edits
+- Result: direct execution of `tests/test_openwrt_init.sh` returned `Permission denied`
+  because the tracked file is not executable. Later independent commands succeeded, so
+  the newline-separated batch returned exit 0 despite the missed init behavior test.
+- Cause: the command omitted `sh` and did not use fail-fast `&&` control flow.
+- Impact: no source or router state changed, but this invocation is not valid complete
+  test evidence.
+- Correction: invoke the test as `sh tests/test_openwrt_init.sh` and connect every gate
+  with `&&`; only the corrected run may be recorded as passing.
+
+## F-058: Test Source Was Copied Into Debian's Product Source Directory
+
+- Date observed: 2026-09-05
+- Scope: modified shutdown regression, sanitizer run, and GCC analyzer on Debian
+- Result: the debug build failed at link time with duplicate `main`, `fs_nfq_setup`,
+  `fs_nfq_cleanup`, and `fs_nfq_loop` definitions.
+- Cause: a multi-source `scp` destination was `src/`, so `tests/test_nfqueue.c` was copied
+  as `src/test_nfqueue.c`. The Makefile wildcard correctly treated the misplaced file as
+  a production source file.
+- Impact: no valid result from this batch. The pollution is confined to the disposable
+  Debian directory, no process or queue 6513 remains, and the local repository/router are
+  unchanged.
+- Correction: delete only the exact mistakenly created remote `src/test_nfqueue.c`, copy
+  product and test files to their matching directories with separate commands, verify
+  the remote file list, then rerun the complete batch fail-fast.
