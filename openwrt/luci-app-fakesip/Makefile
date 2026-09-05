@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-fakesip
 PKG_VERSION:=0.9.1
-PKG_RELEASE:=19
+PKG_RELEASE:=20
 PKGARCH:=all
 
 include $(INCLUDE_DIR)/package.mk

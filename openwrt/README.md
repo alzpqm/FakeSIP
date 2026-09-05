@@ -50,7 +50,7 @@ make package/luci-app-fakesip/compile V=s
 
 `FAKESIP_SRC_DIR` builds the package from your local working tree. Without it,
 the recipe fetches the pinned fork commit in `openwrt/fakesip/Makefile`. The
-core and LuCI packages use the same release version, `0.9.1-r19`. The pinned
+core and LuCI packages use the same release version, `0.9.1-r20`. The pinned
 commit is updated as part of the release process so normal SDK builds reproduce
 the released core source.
 
