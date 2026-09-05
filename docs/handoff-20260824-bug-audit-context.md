@@ -537,3 +537,16 @@ The 45-minute window is not complete at this snapshot.
   packages plus `SHA256SUMS` passed checksum verification. r20 is therefore released;
   only post-publication handoff commit, default-branch integration, and branch inventory
   reporting remain.
+- Pull request 7 was integrated without GitHub's server-generated merge identity. A
+  local ordinary merge commit, `bc254fef86e485006ce8a883dbe9b1261f4e239d`, uses
+  `Codex <codex@local.invalid>` for both author and committer and was pushed to `master`.
+  GitHub reports the pull request merged at that commit.
+- Branch inventory after the merge: `codex/fakesip-bug-findings` and
+  `copilot/code-analysis-improvements` are fully contained by master. The
+  `copilot/code-analysis-improvements-again` branch still has one unique historical
+  commit. GitHub has no branch-hide operation. No remote branch was deleted because the
+  user's word "hide" does not unambiguously authorize destructive deletion; the two
+  fully contained branches are safe deletion candidates if explicitly approved.
+- Final router snapshot at `2026-09-05T09:56:04Z` retained PID 15844, RSS 924 kB,
+  VmSize 1148 kB, one thread, five descriptors, and queue row packet ID 4926 with zero
+  depth/kernel/user drops. No post-monitor anomaly or known temporary r20 file remained.

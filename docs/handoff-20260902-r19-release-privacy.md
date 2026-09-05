@@ -78,3 +78,8 @@ The committed r20 tag snapshot passed the same targeted credential and personal-
 scan immediately before push. The anonymous annotated tag was verified from the remote.
 GitHub's asset digests matched local artifacts, and a fresh download passed the published
 checksum file. Release notes contain no credential, private endpoint, or personal path.
+
+Default-branch integration also avoided GitHub's server-generated merge path because a
+prior merge demonstrated that it would attach an account-linked personal email. Pull
+request 7 was instead completed by pushing a local ordinary merge whose author and
+committer are both `Codex <codex@local.invalid>`.

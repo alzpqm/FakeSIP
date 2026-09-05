@@ -113,3 +113,5 @@ recorded below.
   `43b766de39909f1f86f10aac9d32b55f0e63247be42f67090bcbb2377f198d5f`.
 - All five assets were downloaded into a fresh temporary directory; the four packages
   passed the downloaded checksum file byte for byte.
+- Pull request 7 integrated the release branch into the default branch at anonymous merge
+  commit `bc254fef86e485006ce8a883dbe9b1261f4e239d`.

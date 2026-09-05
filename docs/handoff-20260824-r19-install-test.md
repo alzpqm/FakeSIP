@@ -184,3 +184,7 @@ Debian. Its hash matched both the APK and live filesystem, and the new recommend
 advanced WAN labels and action accessibility attributes were present. Temporary APKs,
 the copied monitor, and the verified package-default `.apk-new` were removed afterward.
 The service remained running with queue 513 drops at zero.
+
+A later final snapshot at `2026-09-05T09:56:04Z` kept PID 15844, RSS 924 kB, VmSize
+1148 kB, one thread, five descriptors, and queue packet ID 4926 with zero depth/kernel/
+user drops. No post-monitor FakeSIP anomaly or known temporary r20 file was present.
