@@ -948,3 +948,116 @@ not failures.
 - Correction: delete only the exact mistakenly created remote `src/test_nfqueue.c`, copy
   product and test files to their matching directories with separate commands, verify
   the remote file list, then rerun the complete batch fail-fast.
+
+## F-059: Release Build Assertion Used an Invented Full Commit SHA
+
+- Date observed: 2026-09-05
+- Scope: fresh-clone OpenWrt 25 APK and OpenWrt 22.03 IPK release build
+- Result: the clean clone reported HEAD
+  `6116df735d7f7cf0d90c544bd31e5aab53cf393b`, but the script compared it with a
+  guessed expansion of the known short SHA `6116df7` and exited 10 before building.
+- Cause: the command manually invented the unseen suffix of a short Git identifier
+  instead of obtaining the complete value from `git rev-parse`.
+- Impact: no package was built or installed by this attempt. The clean clone and new
+  output root remain usable; router state was untouched.
+- Correction: obtain the local complete SHA programmatically, compare it byte-for-byte
+  with the fresh clone and remote branch, and never expand abbreviated object IDs from
+  memory or inference.
+
+## F-060: APK Inspection Omitted the Untrusted-Package Flag
+
+- Date observed: 2026-09-05
+- Scope: extract the freshly built r20 APKs into an isolated Debian directory for
+  ownership, mode, content, and privacy inspection
+- Result: `apk extract` stopped on the first package with `UNTRUSTED signature` after
+  its read-only `adbdump` metadata had succeeded.
+- Cause: the inspection command omitted `--allow-untrusted`; these locally built release
+  candidates are intentionally unsigned until GitHub publication and are not trusted by
+  the SDK host keyring.
+- Impact: the first extraction batch is incomplete and supplies no file-content or IPK
+  inspection evidence. No package was installed and no router state changed.
+- Correction: rerun in a new temporary directory with the documented
+  `apk --allow-untrusted extract --destination DIR PACKAGE` form, keep dependency and
+  signature checking separate from content inspection, and accept only the corrected
+  fail-fast run as evidence.
+
+## F-061: Router Backup Script Was Interpolated by the Tool Wrapper
+
+- Date observed: 2026-09-05
+- Scope: create the pre-r20 FakeSIP rollback backup on the OpenWrt router
+- Result: the local execution wrapper raised `ReferenceError: TS is not defined` before
+  starting SSH.
+- Cause: a JavaScript template literal interpreted the remote shell expression `${TS}`
+  as a local JavaScript interpolation.
+- Impact: no command reached the router, no backup was created by this attempt, and no
+  router or package state changed.
+- Correction: send the remote here-document through a non-interpolating JavaScript raw
+  string, then require the router archive path and SHA-256 output before copying or
+  installing anything.
+
+## F-062: APK Hash Extraction Used Missing Destination Subdirectories
+
+- Date observed: 2026-09-05
+- Scope: compare hashes of files extracted from the r20 APKs with the live router files
+- Result: `apk extract` reported that the temporary `core` destination did not exist.
+- Cause: only the parent `mktemp` directory was created; apk-tools 3 requires the exact
+  destination directory to exist.
+- Impact: this batch produced no valid expected file hashes. The installed router files
+  and running FakeSIP service were not changed.
+- Correction: create each exact extraction destination first and rerun the comparison in
+  an independently fail-fast command.
+
+## F-063: Router-Local LuCI HTTP Fetch Was Denied
+
+- Date observed: 2026-09-05
+- Scope: load the installed LuCI JavaScript through the router's loopback HTTP endpoint
+- Result: `uclient-fetch` returned `Operation not permitted`, and hashing its empty stdout
+  produced the SHA-256 of an empty file; that hash is invalid evidence.
+- Cause: the live uHTTPd/firewall environment does not permit this loopback request from
+  the router shell. The failed extraction SSH command and this fetch were also separated
+  by a newline without a local fail-fast guard, so the second diagnostic still ran.
+- Impact: no LuCI asset or service setting changed, but no live HTTP asset-load claim can
+  be made from this attempt.
+- Correction: fetch the LAN HTTP endpoint from the Debian jump host, require curl success
+  and nonzero content before hashing, and keep it as a separate fail-fast gate.
+
+## F-064: Debian LuCI Fetch Guessed the Wrong HTTP Endpoint
+
+- Date observed: 2026-09-05
+- Scope: corrected live loading check for the installed r20 LuCI JavaScript
+- Result: Debian curl could not connect to `<router-lan-address>` port 80.
+- Cause: the check reused the router SSH address while assuming an HTTP listener on its
+  default port instead of reading uHTTPd's actual configured/listening sockets.
+- Impact: no router state changed and the fetched file was never created; live HTTP asset
+  loading remains unverified by this attempt.
+- Correction: inspect uHTTPd's real listening sockets read-only, select a reachable
+  address and port from that evidence, then require a successful nonempty fetch whose
+  hash matches the installed and packaged JavaScript.
+
+## F-065: Direct LuCI Regression Invocation Omitted Required Paths
+
+- Date observed: 2026-09-05
+- Scope: final local fail-fast syntax, LuCI, init, core, package, and diff gates
+- Result: `tests/test_luci_fakesip.js` exited with its usage error because no view or ACL
+  path arguments were supplied; `set -e` correctly stopped the remaining batch.
+- Cause: the command invoked the test file directly from memory instead of using the
+  argument form already encoded by the package smoke harness.
+- Impact: no valid complete local gate result exists from this batch. Source, packages,
+  and router state were unchanged.
+- Correction: read the canonical invocation from the tracked harness, pass both exact
+  paths explicitly, and rerun every gate from the beginning with fail-fast enabled.
+
+## F-066: Local Rollback-Archive Check Used a Rejected Destructive Cleanup
+
+- Date observed: 2026-09-05
+- Scope: extract and validate the pre-r20 router rollback archive on macOS
+- Result: the execution safety layer rejected the command before launch because it ended
+  with recursive `rm`; no temporary directory was created by the command.
+- Cause: the verification command used a broad destructive cleanup form. It also planned
+  to feed a router-absolute checksum manifest directly to macOS, which would not resolve
+  those paths locally.
+- Impact: the archive itself and all router state remain unchanged, but this attempt is
+  not extraction or rollback-script evidence.
+- Correction: extract to a unique temporary directory, map each manifest suffix under
+  `/files/` to the local extraction root before checking, validate rollback syntax, and
+  clean only that unique tree with depth-first `find -delete`.

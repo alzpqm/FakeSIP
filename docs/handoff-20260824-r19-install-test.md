@@ -137,3 +137,50 @@ dmesg contained no OOM, segfault, killed-process, or NFQUEUE failure lines.
 This installed OpenWrt 25 candidate therefore meets the runtime release gate. No new
 router installation was needed because the rebuilt release APK contains the same core
 binary and LuCI view bytes as the installed package.
+
+## 2026-09-05 r20 Install And Runtime Addendum
+
+The OpenWrt 25 router was upgraded in place from both r19 packages to synchronized
+`0.9.1-r20` packages. Scope remained FakeSIP and queue 513 only.
+
+Release APKs installed:
+
+```text
+2726859439f138b3e69c37123c5b53a8eb640b255acaa7cfbd2a2e246f0cc1a6  fakesip-0.9.1-r20.apk
+1413b447831ecf20d35a606cdeafe36a667a5e1b4cfa3885462aa834ded387d6  luci-app-fakesip-0.9.1-r20.apk
+```
+
+The pre-install rollback archive is
+`fakesip-backup-20260905-092909-r20-preinstall.tgz`, SHA-256
+`c3345de7900fc79763bccf9f5e5d1f0f1e4e76ee7d16810e4b6eb1c43ee054da`.
+Identical copies were verified on the router, under `<local-backup-dir>`, and on the
+Debian jump host. Local extraction validated every recorded file hash and rollback
+script syntax.
+
+UCI export SHA-256 remained
+`39ab69d7186e434262e5fc59a2b4dae4224894fa92392c8cefb2688e38ff6fbc`
+across installation. The service retained outbound IPv4/IPv6, silent mode, the two
+configured IMS SIP URIs, queue 513, repeat 1, TTL 3, fwmark/mask, and all three PPPoE
+devices. procd reports `term_timeout: 15`.
+
+Installed content hashes match the APK extraction exactly:
+
+```text
+4abbcd7f5ee37cd58f62b2e6a0cbe46ebc91b6dbcb14ee6a007fcd10aaaf236b  /usr/bin/fakesip
+42b98b1968ce03959c219858def039f5c0fc202228cd04b2ccbe4bb18ca5b3eb  /etc/init.d/fakesip
+ae70baf041ddd55fff1914a08fa4bda28208f087b6d4753d24c03cf56c8100fa  /www/luci-static/resources/view/fakesip/fakesip.js
+```
+
+Twelve restart cycles each replaced the queue owner in 1.03-1.04 seconds, removed the
+old PID, preserved zero queue depth/drops, and logged a normal exit without procd
+SIGKILL. A following 15-minute window retained PID 15844. Queue packet ID advanced
+270 to 3156 with zero depth, kernel drop, and user drop at all 16 samples. VmSize stayed
+1148 kB, RSS settled at 924 kB, and thread/FD counts stayed 1/5. The monitor file SHA-256
+is `1c12ecc72df92fd62378b74575900b8e2d57818de686f7133a2cc0572218bf6a`;
+verified copies are stored under `<local-artifact-dir>` and on the Debian jump host.
+
+The installed LuCI asset was fetched through the router's actual LAN HTTP listener from
+Debian. Its hash matched both the APK and live filesystem, and the new recommended versus
+advanced WAN labels and action accessibility attributes were present. Temporary APKs,
+the copied monitor, and the verified package-default `.apk-new` were removed afterward.
+The service remained running with queue 513 drops at zero.

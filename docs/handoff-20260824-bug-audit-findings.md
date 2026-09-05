@@ -256,3 +256,26 @@ command's exit status, but callers did not check that status, so a failed build,
 test, or nft syntax check could be followed by a successful final summary and make the
 whole script exit zero. The next release changes the harness to `set -euo pipefail` and
 must rerun the complete smoke suite to prove the stricter gate is usable.
+
+## 2026-09-05 r20 Resolution
+
+No catastrophic or unresolved high-severity defect remains in the r20 candidate.
+
+The shutdown finding is resolved by making the NFQUEUE descriptor nonblocking, polling
+it with a bounded 250 ms wait, and checking the signal exit flag around every wait and
+receive. The OpenWrt service also declares a 15-second procd termination timeout. A new
+unit regression proves an idle SA_RESTART signal cannot trap the loop indefinitely.
+Debian terminated a confirmed isolated queue owner normally in about 103 ms. The live
+OpenWrt 25 installation then completed 12 consecutive service restarts: every previous
+PID logged `exiting normally`, disappeared before replacement, and was replaced in
+1.03-1.04 seconds. No procd SIGKILL appeared.
+
+The smoke-harness finding is resolved by `set -euo pipefail`. The corrected full Debian
+smoke, sanitizer/core suite, analyzer, nft rollback integration, OpenWrt init/LuCI tests,
+and both package-format builds passed.
+
+The final 15-minute OpenWrt sample kept one PID, one thread, five descriptors, and
+VmSize 1148 kB. RSS settled at 924 kB. Queue 513 packet ID advanced from 270 to 3156;
+all 16 samples had depth, kernel drop, and user drop equal to zero. One PPPoE interface
+had a pre-window cumulative RX drop of one, but it did not increase. No new OOM,
+segfault, NFQUEUE failure, verdict failure, or forced termination was observed.

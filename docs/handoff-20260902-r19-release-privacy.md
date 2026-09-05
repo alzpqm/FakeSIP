@@ -53,3 +53,23 @@ would be disruptive to existing tags and users.
 Gemini CLI was requested after the public diff had been cleaned, but Code Assist OAuth
 returned HTTP 403 before inference. No source review result was produced and no Gemini
 approval is claimed.
+
+## 2026-09-05 r20 Privacy Addendum
+
+The r20 APK and IPK contents were extracted into fresh Debian directories before router
+installation. All packaged owners/groups are root/root. The config is mode 0600, the
+binary and init script are 0755, and LuCI/menu/ACL files are 0644. Content scans found no
+personal macOS path, build-host home path, lab login alias, router credential, cloud
+project identifier, private-key header, or known personal identifier.
+
+The IPK controls use only neutral source fields:
+
+```text
+Source: package/fakesip
+Source: package/luci-app-fakesip
+```
+
+Gemini CLI 0.53.0 was requested with the authorized project environment selection, but
+Code Assist returned HTTP 403 before inference because no valid product license was
+available. No Gemini approval is claimed for r20. Executable tests, direct source and
+artifact inspection, and live OpenWrt evidence remain the acceptance basis.

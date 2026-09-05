@@ -74,3 +74,27 @@ run; the iptables rollback path was not newly repeated in this release cycle.
 
 The published tag remains immutable. Post-release verification notes and any errors in
 the verification procedure are recorded on the release branch after the tagged commit.
+
+## 2026-09-05 r20 Candidate Addendum
+
+- Functional source and package pin:
+  `8f000525b1fa2711a2659810df397ebdcc21d7f7`.
+- Recipe head used by the clean builds:
+  `6116df735d7f7cf0d90c544bd31e5aab53cf393b`.
+- Core and LuCI package versions: `0.9.1-r20`.
+
+Fresh OpenWrt 25.12.5 x86_64 APK and OpenWrt 22.03.7 x86_64 IPK builds produced:
+
+```text
+2726859439f138b3e69c37123c5b53a8eb640b255acaa7cfbd2a2e246f0cc1a6  fakesip-0.9.1-r20.apk
+1413b447831ecf20d35a606cdeafe36a667a5e1b4cfa3885462aa834ded387d6  luci-app-fakesip-0.9.1-r20.apk
+8105023e53035d677c49e0fd2060a5691165043319055b77fa0f47f24514f881  fakesip_0.9.1-20_x86_64.ipk
+51b80158024dbc643f9067e4faa1316ee285b6555f0d754e96b7cb8f7352c67f  luci-app-fakesip_0.9.1-20_all.ipk
+```
+
+APK metadata reports x86_64 for both packages, as required by the tested OpenWrt 25 apk
+manager. IPK metadata reports x86_64 core and architecture-independent LuCI. Inspection
+verified dependencies, neutral source metadata, root ownership, expected file modes, and
+privacy-clean content. The OpenWrt 25 APK bytes were installed and matched against live
+core/init/LuCI files. The publication tag and GitHub release remain pending until the
+final committed privacy scan.

@@ -472,6 +472,57 @@ The 45-minute window is not complete at this snapshot.
 - A Debian verification transfer then misplaced `tests/test_nfqueue.c` under `src/`, and
   the production wildcard build failed with duplicate symbols. This is F-058, not a
   product regression; the exact disposable file must be removed before rerunning.
+- The first clean-clone package build stopped before compilation because a script guessed
+  the suffix of short SHA `6116df7` incorrectly. The actual full clone HEAD is
+  `6116df735d7f7cf0d90c544bd31e5aab53cf393b`. This is F-059 and is a direct example of
+  why all full identifiers must be read from Git rather than reconstructed from memory.
 - Static review found that `tools/debian-smoke-test.sh` used only `set -u`, allowing a
   failed `run()` call to be masked by the final successful summary. The harness now uses
   `set -euo pipefail`; its full corrected run is required before release.
+- The first r20 artifact extraction attempt omitted `--allow-untrusted`, so the SDK host
+  `apk` rejected the intentionally unsigned local APK before content inspection. This is
+  F-060. The metadata read was valid, but the incomplete extraction batch is discarded;
+  a fresh fail-fast extraction with the explicit flag is required.
+- The first pre-install router backup call never reached SSH because its JavaScript
+  wrapper interpolated the remote `${TS}` shell variable and raised a local reference
+  error. This is F-061; router state remained unchanged and a non-interpolating retry is
+  required before installation.
+- The first post-install APK file-hash comparison omitted creation of the exact apk-tools
+  extraction subdirectories (F-062), and a separate router-loopback LuCI fetch was denied
+  while its empty output was still hashed (F-063). Neither changed router state. Both
+  results are discarded; corrected isolated checks must create destinations explicitly
+  and fetch the LAN HTTP endpoint from Debian with nonempty-content validation.
+- The first Debian LAN fetch then assumed port 80 on the SSH address and was refused
+  (F-064). That endpoint guess is discarded; uHTTPd listener evidence must be read before
+  the next live asset request.
+- The first final local test batch called `tests/test_luci_fakesip.js` without its two
+  required path arguments and stopped at the usage check (F-065). Fail-fast behavior was
+  correct, but the entire batch must be rerun using the canonical tracked invocation.
+- A local rollback-archive extraction command was rejected before execution because it
+  used recursive `rm` for cleanup (F-066). The corrected check must map router-absolute
+  manifest paths into a unique extraction directory and use scoped depth-first deletion.
+
+## 2026-09-05 r20 Install And Release-Candidate State
+
+- Clean OpenWrt 25 APK and OpenWrt 22.03 IPK builds completed from recipe head
+  `6116df735d7f7cf0d90c544bd31e5aab53cf393b`, pinned to functional source
+  `8f000525b1fa2711a2659810df397ebdcc21d7f7`.
+- Artifact extraction verified synchronized `0.9.1-r20` versions, root ownership,
+  expected modes and dependencies, neutral IPK `Source:` fields, and no private content.
+- The pre-install backup SHA-256 is
+  `c3345de7900fc79763bccf9f5e5d1f0f1e4e76ee7d16810e4b6eb1c43ee054da`.
+  Router, local, and Debian copies match; local extraction and rollback syntax passed.
+- The OpenWrt 25 upgrade preserved the UCI export exactly. Installed core, init, and LuCI
+  hashes match their APK extraction. The service retained the formal IMS dual-URI,
+  three-PPPoE, outbound IPv4/IPv6, silent, repeat 1, TTL 3 configuration.
+- Twelve consecutive restarts replaced the process normally in 1.03-1.04 seconds each.
+  Every old PID disappeared, every queue owner matched its process, drops stayed zero,
+  and no procd SIGKILL occurred.
+- The following 15-minute sample retained PID 15844, one thread, five descriptors, and
+  VmSize 1148 kB; RSS settled at 924 kB. Queue packet ID advanced 270 to 3156 with zero
+  depth, kernel drop, and user drop. No new severe runtime diagnostic appeared.
+- The live LuCI JavaScript loaded successfully from Debian through the actual HTTP
+  listener and matched the APK/live-file hash. Browser screenshot coverage remains
+  unavailable under F-056 and is not claimed.
+- Temporary router APKs, monitor copy, and the verified package-default `.apk-new` were
+  removed. The service remained running and queue 513 remained healthy.
