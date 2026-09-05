@@ -526,3 +526,14 @@ The 45-minute window is not complete at this snapshot.
   unavailable under F-056 and is not claimed.
 - Temporary router APKs, monitor copy, and the verified package-default `.apk-new` were
   removed. The service remained running and queue 513 remained healthy.
+- The first tag-push batch created the correct local r20 annotated tag but stopped before
+  pushing because its tagger assertion wrapped Git's already bracketed email in another
+  pair of angle brackets. This is F-067. The remote tag remained absent; the existing
+  local tag must be verified and pushed without recreation.
+- The corrected tagger check passed and the existing annotated tag was pushed. GitHub
+  release `v0.9.1-openwrt-r20` is published, non-draft, and non-prerelease. Its tag
+  dereferences to `84092aeea6079ea0458ef482aaf154a4cbf0f1df`.
+- All four remote package digests match local artifacts. A fresh download of the four
+  packages plus `SHA256SUMS` passed checksum verification. r20 is therefore released;
+  only post-publication handoff commit, default-branch integration, and branch inventory
+  reporting remain.

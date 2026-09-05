@@ -73,3 +73,8 @@ Gemini CLI 0.53.0 was requested with the authorized project environment selectio
 Code Assist returned HTTP 403 before inference because no valid product license was
 available. No Gemini approval is claimed for r20. Executable tests, direct source and
 artifact inspection, and live OpenWrt evidence remain the acceptance basis.
+
+The committed r20 tag snapshot passed the same targeted credential and personal-endpoint
+scan immediately before push. The anonymous annotated tag was verified from the remote.
+GitHub's asset digests matched local artifacts, and a fresh download passed the published
+checksum file. Release notes contain no credential, private endpoint, or personal path.

@@ -96,5 +96,20 @@ APK metadata reports x86_64 for both packages, as required by the tested OpenWrt
 manager. IPK metadata reports x86_64 core and architecture-independent LuCI. Inspection
 verified dependencies, neutral source metadata, root ownership, expected file modes, and
 privacy-clean content. The OpenWrt 25 APK bytes were installed and matched against live
-core/init/LuCI files. The publication tag and GitHub release remain pending until the
-final committed privacy scan.
+core/init/LuCI files. Publication followed the final committed privacy scan and is
+recorded below.
+
+### r20 Published Release Verification
+
+- Release URL:
+  `https://github.com/alzpqm/FakeSIP/releases/tag/v0.9.1-openwrt-r20`.
+- Release state: published, non-draft, non-prerelease.
+- Annotated tag object: `faf587a50d6a1ce8d40d953d2c44a5500eb495d4`.
+- Dereferenced tag commit:
+  `84092aeea6079ea0458ef482aaf154a4cbf0f1df`.
+- The annotated tagger is `Codex <codex@local.invalid>`.
+- Remote inventory: four package assets plus `SHA256SUMS`.
+- GitHub digest fields match all four package hashes above. `SHA256SUMS` has SHA-256
+  `43b766de39909f1f86f10aac9d32b55f0e63247be42f67090bcbb2377f198d5f`.
+- All five assets were downloaded into a fresh temporary directory; the four packages
+  passed the downloaded checksum file byte for byte.

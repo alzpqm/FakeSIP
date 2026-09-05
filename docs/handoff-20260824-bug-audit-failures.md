@@ -1061,3 +1061,17 @@ not failures.
 - Correction: extract to a unique temporary directory, map each manifest suffix under
   `/files/` to the local extraction root before checking, validate rollback syntax, and
   clean only that unique tree with depth-first `find -delete`.
+
+## F-067: Tag Identity Assertion Added Duplicate Angle Brackets
+
+- Date observed: 2026-09-05
+- Scope: create and push the anonymous `v0.9.1-openwrt-r20` annotated tag
+- Result: the local annotated tag was created correctly, but the following identity
+  assertion stopped before `git push`; the remote tag remained absent.
+- Cause: Git's `%(taggeremail)` formatting already includes angle brackets, while the
+  assertion format added another pair and compared `Codex <<...>>` with `Codex <...>`.
+- Impact: the correct local tag object exists and points to the intended validated commit,
+  but no remote tag or GitHub release was created by this attempt.
+- Correction: inspect the existing tag object directly, compare
+  `%(taggername) %(taggeremail)` with the anonymous identity, confirm the target commit,
+  then push that exact existing tag and verify it with `ls-remote`.
