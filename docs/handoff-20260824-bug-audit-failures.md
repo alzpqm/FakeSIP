@@ -1075,3 +1075,139 @@ not failures.
 - Correction: inspect the existing tag object directly, compare
   `%(taggername) %(taggeremail)` with the anonymous identity, confirm the target commit,
   then push that exact existing tag and verify it with `ls-remote`.
+
+## F-068: Browser Remained Unavailable for the LuCI Dark-Mode Reproduction
+
+- Date observed: 2026-09-06
+- Scope: visually reproduce the reported FakeSIP LuCI night-mode defect through a
+  temporary SSH-forwarded live router page
+- Result: the HTTP tunnel started, but the Browser runtime again returned
+  `No browser is available` before opening the page. The tunnel was then closed
+  intentionally.
+- Cause: this session still has no connected supported browser instance.
+- Impact: no screenshot or computed-style browser evidence exists from this attempt. No
+  router file, UCI setting, service, or queue was changed.
+- Correction: derive the active theme and its dark-mode selectors directly from the live
+  router, add theme-variable-compatible LuCI markup/styles only after that inspection,
+  and validate through static DOM tests plus live asset loading. Do not claim visual
+  screenshot coverage unless a supported browser becomes available.
+
+## F-069: Dark-Mode Patch Used an Inexact Button-Array Context
+
+- Date observed: 2026-09-06
+- Scope: replace the LuCI status and service-button classes with theme-aware variants
+- Result: `apply_patch` rejected the complete patch because its expected service-button
+  array context used `], [` where the source actually uses `}, [`.
+- Cause: the patch combined several edits and reproduced one nearby delimiter from
+  memory instead of copying the exact source line.
+- Impact: apply_patch made no partial source or test change; router state was untouched.
+- Correction: anchor separate smaller patches to the exact status-label, status-node,
+  action-call, and test assertion lines just read from the files, then inspect the diff
+  before running the full LuCI and package gates.
+
+## F-070: Translation Test Parsed JavaScript Strings as JSON Strings
+
+- Date observed: 2026-09-06
+- Scope: verify that every LuCI `_('...')` message has a nonempty Traditional Chinese PO
+  translation
+- Result: the new Node test failed while decoding the valid JavaScript message containing
+  the quoted text `"sip:"`.
+- Cause: the test wrapped a JavaScript single-quoted string body in JSON double quotes;
+  double quotes that need no escaping in JavaScript then became invalid JSON syntax.
+- Impact: the test stopped before assessing translation completeness. No package was
+  built or installed and router state was untouched.
+- Correction: decode trusted JavaScript single-quoted literals with JavaScript syntax,
+  keep JSON decoding only for PO double-quoted fields, and rerun all translation, gettext,
+  LuCI, and package gates from the beginning.
+
+## F-071: First JavaScript Decoder Patch Returned Its Source Fragment
+
+- Date observed: 2026-09-06
+- Scope: rerun the Traditional Chinese translation completeness gate after F-070
+- Result: the test reported a nonexistent missing translation named `" + value + "`.
+- Cause: the generated function string contained the concatenation expression as literal
+  text, so every decoded JavaScript message became that same source fragment.
+- Impact: the translation verdict and the remainder of that fail-fast batch are invalid.
+  No package was built or installed and router state was untouched.
+- Correction: concatenate the captured literal body outside the generated function's
+  quoted text, inspect the resulting source line, then rerun the complete gate batch.
+
+## F-072: Decoder Quote Correction Contained One Escape Layer Too Many
+
+- Date observed: 2026-09-06
+- Scope: syntax-check the corrected Traditional Chinese translation test decoder
+- Result: `node --check tests/test_luci_i18n.js` failed with `missing ) after argument
+  list` at the generated-function expression.
+- Cause: the patch retained backslashes needed by the patch-construction layer in the
+  JavaScript file itself, terminating its outer single-quoted string early.
+- Impact: no translation test ran, no package was built or installed, and router state
+  was untouched.
+- Correction: use a double-quoted outer JavaScript string for the generated source,
+  avoiding nested single-quote escaping, and restart the gate batch at syntax checking.
+
+## F-073: Combined Localization Documentation Patch Assumed Wrong Wrapping
+
+- Date observed: 2026-09-06
+- Scope: add Traditional Chinese documentation and change the public package policy
+- Result: `apply_patch` rejected the complete patch because one expected sentence in
+  `openwrt/README.md` was wrapped differently from the patch context.
+- Cause: several files and a long existing document were combined into one patch using
+  remembered paragraph wrapping instead of a freshly copied exact hunk.
+- Impact: the patch was atomic; no PO header, README, translation document, package, or
+  router state changed.
+- Correction: apply independent exact-context patches for the PO header, root README,
+  OpenWrt policy paragraphs, and each new Traditional Chinese document.
+
+## F-074: README Replacement Used Two Operations On One Path
+
+- Date observed: 2026-09-06
+- Scope: replace the short English GitHub README and add its Traditional Chinese peer
+- Result: `apply_patch` rejected the patch as invalid because it contained both delete
+  and add operations for `README.md` in one patch.
+- Cause: the patch format does not permit multiple operations targeting the same path.
+- Impact: the entire patch was rejected; neither README changed and router state was
+  untouched.
+- Correction: delete the old README and add its replacement in separate `apply_patch`
+  calls, then add the new translation as another independent operation.
+
+## F-075: OpenWrt Policy Patch Repeated The Same Wrapping Assumption
+
+- Date observed: 2026-09-06
+- Scope: update the English OpenWrt compatibility matrix and add its translation
+- Result: the patch was again atomically rejected at the same compatibility paragraph.
+- Cause: despite deciding to split the operation, the submitted patch still bundled the
+  old inexact two-line paragraph context and a new file.
+- Impact: neither the English OpenWrt guide nor its Traditional Chinese peer changed;
+  router and release state were untouched.
+- Correction: inspect numbered source lines, patch only exact lines 1-21, 59-62, and
+  110 independently, then add the translated guide without an existing-file hunk.
+
+## F-076: Gemini Code Assist License Rejected The Requested Review
+
+- Date observed: 2026-09-06
+- Scope: direct Gemini review of the dark-mode, Traditional Chinese, LMO packaging, and
+  OpenWrt 25+ APK-only release changes
+- Result: `gemini` exited 55. The Code Assist onboarding endpoint returned HTTP 403 with
+  `You do not have a valid license of this product`; the CLI also reported that this
+  workspace was not trusted for headless execution.
+- Cause: the authenticated account currently lacks the required Gemini Code Assist
+  product license, and this repository has no Gemini trusted-directory state.
+- Impact: no Gemini review verdict exists. The command was read-only; source, packages,
+  router, and GitHub state were unchanged.
+- Correction: do not repeatedly retry the same unavailable service. Base the release
+  decision on executable local, Debian, OpenWrt SDK, artifact, and router tests, and do
+  not claim Gemini approval.
+
+## F-077: Debian Did Not Resolve The Historical Router SSH Alias
+
+- Date observed: 2026-09-06
+- Scope: read-only pre-r21 FakeSIP and queue 513 router health snapshot through Debian
+- Result: the outer Debian SSH succeeded, but its nested SSH failed immediately with
+  `Could not resolve hostname natter-openwrt`.
+- Cause: the historical router alias is not currently defined or resolvable in the
+  Debian jump host's SSH/DNS environment.
+- Impact: no router command ran and no router, queue, package, or configuration state
+  changed. The health snapshot has no result.
+- Correction: inspect only the jump host's SSH configuration/tool availability, then
+  connect to its explicitly configured authorized router endpoint without relying on an
+  alias and rerun the complete read-only snapshot.

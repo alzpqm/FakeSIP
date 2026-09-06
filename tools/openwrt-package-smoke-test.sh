@@ -46,7 +46,9 @@ require_file "$LUCI_DIR/Makefile"
 require_file "$LUCI_DIR/root/usr/share/luci/menu.d/luci-app-fakesip.json"
 require_file "$LUCI_DIR/root/usr/share/rpcd/acl.d/luci-app-fakesip.json"
 require_file "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
+require_file "$LUCI_DIR/po/zh_Hant/fakesip.po"
 require_file "$ROOT_DIR/tests/test_luci_fakesip.js"
+require_file "$ROOT_DIR/tests/test_luci_i18n.js"
 
 require_executable "$PKG_DIR/files/fakesip.init"
 
@@ -68,6 +70,9 @@ if command -v node >/dev/null 2>&1; then
 	node "$ROOT_DIR/tests/test_luci_fakesip.js" \
 		"$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js" \
 		"$LUCI_DIR/root/usr/share/rpcd/acl.d/luci-app-fakesip.json"
+	node "$ROOT_DIR/tests/test_luci_i18n.js" \
+		"$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js" \
+		"$LUCI_DIR/po/zh_Hant/fakesip.po"
 else
     printf 'WARN: node is unavailable; skipping LuCI JS and JSON syntax checks.\n'
 fi
@@ -124,6 +129,9 @@ require_grep 'PKG_RELEASE:=20' "$LUCI_DIR/Makefile"
 require_grep '^[[:space:]]+PKGARCH:=all$' "$LUCI_DIR/Makefile"
 require_grep 'luci-base' "$LUCI_DIR/Makefile"
 require_grep 'rpcd-mod-file' "$LUCI_DIR/Makefile"
+require_grep 'luci-base/host' "$LUCI_DIR/Makefile"
+require_grep 'po2lmo .*po/zh_Hant/fakesip.po' "$LUCI_DIR/Makefile"
+require_grep 'fakesip.zh-tw.lmo' "$LUCI_DIR/Makefile"
 require_grep 'admin/services/fakesip' "$LUCI_DIR/root/usr/share/luci/menu.d/luci-app-fakesip.json"
 require_grep 'luci-app-fakesip' "$LUCI_DIR/root/usr/share/rpcd/acl.d/luci-app-fakesip.json"
 require_grep 'form.Map..fakesip' "$LUCI_DIR/root/www/luci-static/resources/view/fakesip/fakesip.js"
@@ -163,6 +171,8 @@ require_grep '--script "post-install:' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 require_grep '--script "pre-deinstall:' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 require_grep 'default_postinst' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 require_grep 'default_prerm' "$ROOT_DIR/tools/build-openwrt-apk.sh"
+require_grep 'staging_dir/hostpkg/bin/po2lmo' "$ROOT_DIR/tools/build-openwrt-apk.sh"
+require_grep 'fakesip.zh-tw.lmo' "$ROOT_DIR/tools/build-openwrt-apk.sh"
 
 logger_setup_line=$(grep -n 'res = fs_logger_setup();' "$ROOT_DIR/src/mainfun.c" | tail -n 1 | cut -d: -f1)
 daemon_silent_line=$(grep -n 'if (g_ctx.daemon && g_ctx.logfp == stderr)' "$ROOT_DIR/src/mainfun.c" | cut -d: -f1)

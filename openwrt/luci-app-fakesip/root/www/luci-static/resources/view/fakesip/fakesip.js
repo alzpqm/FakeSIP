@@ -294,10 +294,10 @@ return view.extend({
 
 	statusLabel: function(state) {
 		if (state === STATUS_RUNNING)
-			return { text: _('Running'), cssClass: 'ifacebadge ifacebadge-active' };
+			return { text: _('Running'), cssClass: 'label success' };
 		if (state === STATUS_STOPPED)
-			return { text: _('Stopped'), cssClass: 'ifacebadge' };
-		return { text: _('Unknown'), cssClass: 'ifacebadge' };
+			return { text: _('Stopped'), cssClass: 'label' };
+		return { text: _('Unknown'), cssClass: 'label warning' };
 	},
 
 	updateServiceStatus: function(status) {
@@ -308,7 +308,7 @@ return view.extend({
 			return;
 
 		label = this.serviceBusy
-			? { text: _('Working...'), cssClass: 'ifacebadge' }
+			? { text: _('Working...'), cssClass: 'label notice' }
 			: this.statusLabel(this.serviceStatus.state);
 		this.statusNode.className = label.cssClass;
 		this.statusNode.textContent = label.text;
@@ -403,7 +403,7 @@ return view.extend({
 	renderStatusPanel: function(status) {
 		this.actionButtons = {};
 		this.statusNode = E('span', {
-			'class': 'ifacebadge',
+			'class': 'label',
 			'aria-live': 'polite'
 		});
 
@@ -419,13 +419,13 @@ return view.extend({
 					'class': 'cbi-page-actions'
 				}, [
 					this.actionButton(_('Start'), _('Start FakeSIP'),
-						'start', 'cbi-button-positive'),
+						'start', 'cbi-button-positive important'),
 					' ',
 					this.actionButton(_('Restart'), _('Restart FakeSIP'),
 						'restart', 'cbi-button-apply'),
 					' ',
 					this.actionButton(_('Stop'), _('Stop FakeSIP'),
-						'stop', 'cbi-button-negative')
+						'stop', 'cbi-button-negative important')
 				])
 			])
 		]);

@@ -25,12 +25,14 @@ SDK_DIR=$1
 ARCH=${ARCH:-x86_64}
 OUT_DIR=${2:-"$SDK_DIR/bin/packages/$ARCH/base"}
 APK="$SDK_DIR/staging_dir/host/bin/apk"
+PO2LMO="$SDK_DIR/staging_dir/hostpkg/bin/po2lmo"
 TARGET_STAGING=$(find "$SDK_DIR/staging_dir" -maxdepth 1 -type d -name 'target-*' | head -n 1)
 TARGET_CC=${TARGET_CC:-$(find "$SDK_DIR/staging_dir" -path '*/bin/*-openwrt-linux-musl-gcc' -type f | head -n 1)}
 STRIP=${STRIP:-$(find "$SDK_DIR/staging_dir" -path '*/bin/*-openwrt-linux-musl-strip' -type f | head -n 1)}
 export STAGING_DIR="$SDK_DIR/staging_dir"
 
 [ -x "$APK" ] || { echo "missing apk tool: $APK" >&2; exit 1; }
+[ -x "$PO2LMO" ] || { echo "missing LuCI translation compiler: $PO2LMO" >&2; exit 1; }
 [ -n "$TARGET_STAGING" ] || { echo "missing target staging dir in SDK" >&2; exit 1; }
 [ -x "$TARGET_CC" ] || { echo "missing target compiler in SDK" >&2; exit 1; }
 [ -x "$STRIP" ] || { echo "missing target strip in SDK" >&2; exit 1; }
@@ -147,6 +149,9 @@ chown -R 0:0 "$FAKESIP_ROOT"
     --output "$OUT_DIR/fakesip-$FAKESIP_VERSION-r$FAKESIP_RELEASE.apk"
 
 cp -Rp "$ROOT_DIR/openwrt/luci-app-fakesip/root/." "$LUCI_ROOT/"
+mkdir -p "$LUCI_ROOT/usr/lib/lua/luci/i18n"
+"$PO2LMO" "$ROOT_DIR/openwrt/luci-app-fakesip/po/zh_Hant/fakesip.po" \
+    "$LUCI_ROOT/usr/lib/lua/luci/i18n/fakesip.zh-tw.lmo"
 find "$LUCI_ROOT" \( -name '._*' -o -name '.DS_Store' \) -exec rm -rf {} +
 make_pkg_metadata "$LUCI_ROOT" luci-app-fakesip
 make_default_scripts "$LUCI_SCRIPTS" luci-app-fakesip

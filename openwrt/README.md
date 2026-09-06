@@ -1,5 +1,7 @@
 # FakeSIP OpenWrt Package
 
+[English](README.md) | [正體中文](README.zh-TW.md)
+
 This directory contains an OpenWrt package recipe, a UCI config, and a procd
 service script for FakeSIP.
 
@@ -7,18 +9,20 @@ service script for FakeSIP.
 
 The package uses the native package format of each OpenWrt release:
 
-| OpenWrt releases | Package format | Default firewall path | FakeSIP setting |
-| --- | --- | --- | --- |
-| 25.12 | APK via `apk` | `fw4`/nftables | `use_iptables='0'` |
-| 24.10, 23.05, 22.03 | IPK via `opkg` | `fw4`/nftables | `use_iptables='0'` |
-| 21.02 | IPK via `opkg` | `fw3`/iptables | `use_iptables='1'` |
-| 19.07 | IPK via `opkg` | `fw3`/iptables | `use_iptables='1'` |
+| OpenWrt releases | Availability | Package format | Default firewall path | FakeSIP setting |
+| --- | --- | --- | --- | --- |
+| 25.12 and newer | GitHub Release | APK via `apk` | `fw4`/nftables | `use_iptables='0'` |
+| 24.10, 23.05, 22.03 | Build from source | IPK via `opkg` | `fw4`/nftables | `use_iptables='0'` |
+| 21.02 | Build from source | IPK via `opkg` | `fw3`/iptables | `use_iptables='1'` |
+| 19.07 | Build from source | IPK via `opkg` | `fw3`/iptables | `use_iptables='1'` |
 
 This repository's compatibility gate covers OpenWrt 19.07 through 25.12. The
 18.06 and older series use an earlier LuCI JavaScript packaging/API generation
-and are not claimed as supported until they receive a separate port. The
-package can still be built from an older SDK by an experienced user, but that
-is not a release guarantee.
+and are not claimed as supported until they receive a separate port.
+
+GitHub Releases publish only OpenWrt 25+ APK files. OpenWrt 24.10 and older are
+supported as source-build targets: use the SDK matching the router's exact
+release and architecture. Prebuilt IPKs are not published.
 
 OpenWrt 22.03 and later use firewall4/nftables by default. OpenWrt 19.07 and
 21.02 use the legacy firewall3/iptables path by default. The core binary
@@ -56,10 +60,10 @@ the released core source.
 
 The package artifact is written under `bin/packages/`.
 
-For OpenWrt 24.10 and older, the repository includes a helper that temporarily
-adds both local recipes to a matching SDK, uses a package-only build selection,
-builds native IPK packages, restores the SDK `.config`, and copies the packages
-out:
+For OpenWrt 24.10 and older, build the packages yourself. The repository
+includes a helper that temporarily adds both local recipes to a matching SDK,
+uses a package-only build selection, builds native IPK packages, restores the
+SDK `.config`, and copies the packages out:
 
 ```sh
 ./tools/build-openwrt-ipk.sh /path/to/openwrt-sdk /tmp/fakesip-ipk
@@ -107,7 +111,8 @@ preserve the existing file and write the packaged service as
 `/etc/init.d/fakesip.apk-new`. Review and merge it before expecting LuCI/UCI
 changes to control the running service.
 
-OpenWrt 24.10 and older use `opkg`:
+OpenWrt 24.10 and older use `opkg` after you build the IPKs from source with a
+matching SDK:
 
 ```sh
 scp bin/packages/*/*/fakesip_*.ipk root@192.168.1.1:/tmp/

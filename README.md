@@ -1,38 +1,45 @@
 # FakeSIP
 
-Disguise your UDP traffic as SIP protocol to evade DPI detection, using Netfilter Queue (NFQUEUE).
+[English](README.md) | [正體中文](README.zh-TW.md)
 
-[[ 中文文档 ]](https://github.com/MikeWang000000/FakeSIP/wiki)
+FakeSIP uses Netfilter Queue (NFQUEUE) to send SIP-shaped decoy packets beside
+selected UDP traffic. It is intended for controlled network compatibility and
+DPI research.
 
+FakeSIP does not guarantee that a carrier will prioritize or unthrottle a
+connection. Results depend on the network, payload, route, and traffic pattern.
 
 ## Quick Start
 
-```
+```sh
 fakesip -i eth0
 ```
 
 ## OpenWrt
 
-OpenWrt packaging is available under [`openwrt/`](openwrt/). It includes:
+OpenWrt packaging under [`openwrt/`](openwrt/) includes:
 
-- `fakesip`: the binary package, UCI config, and procd service
-- `luci-app-fakesip`: a LuCI page under **Services > FakeSIP**
+- `fakesip`: the binary, UCI configuration, and procd service
+- `luci-app-fakesip`: a LuCI page under **Services > FakeSIP**, with English
+  and Traditional Chinese
 
-Build and install steps are documented in [`openwrt/README.md`](openwrt/README.md).
+GitHub Releases provide ready-to-install APK packages for OpenWrt 25 and newer.
+OpenWrt 24.10 and older remain source-build targets; prebuilt IPKs are not
+published. See the [OpenWrt guide](openwrt/README.md) for installation,
+configuration, dependencies, and older SDK builds.
 
 ## Tests
 
-After building FakeSIP on Linux, run the focused core regression suite with:
+After building FakeSIP on Linux, run the focused core regression suite:
 
 ```sh
 make DEBUG=1
 ./tools/core-regression-test.sh
 ```
 
-
 ## Usage
 
-```
+```text
 Usage: fakesip [options]
 
 Interface Options:
@@ -63,9 +70,7 @@ Advanced Options:
   -x <mask>          set the mask for fwmark
   -y <pct>           raise TTL dynamically to <pct>% of estimated hops
   -z                 use iptables commands instead of nft
-
 ```
-
 
 ## License
 

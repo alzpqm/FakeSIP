@@ -221,14 +221,20 @@ const restartButton = source.indexOf("this.actionButton(_('Restart')");
 const stopButton = source.indexOf("this.actionButton(_('Stop')");
 assert(startButton >= 0 && startButton < restartButton && restartButton < stopButton,
 	'service buttons must be ordered Start, Restart, Stop');
-assert(/this\.actionButton\(_\('Start'\), _\('Start FakeSIP'\),\s*'start', 'cbi-button-positive'\)/.test(source),
-	'Start button does not match the FakeHTTP positive style');
+assert(/this\.actionButton\(_\('Start'\), _\('Start FakeSIP'\),\s*'start', 'cbi-button-positive important'\)/.test(source),
+	'Start button is missing the dark-mode-aware positive style');
 assert(/this\.actionButton\(_\('Restart'\), _\('Restart FakeSIP'\),\s*'restart', 'cbi-button-apply'\)/.test(source),
 	'Restart button does not match the FakeHTTP apply style');
-assert(/this\.actionButton\(_\('Stop'\), _\('Stop FakeSIP'\),\s*'stop', 'cbi-button-negative'\)/.test(source),
-	'Stop button does not match the FakeHTTP negative style');
-assert(source.indexOf("cssClass: 'ifacebadge ifacebadge-active'") >= 0,
-	'running status does not match the FakeHTTP active badge style');
+assert(/this\.actionButton\(_\('Stop'\), _\('Stop FakeSIP'\),\s*'stop', 'cbi-button-negative important'\)/.test(source),
+	'Stop button is missing the dark-mode-aware negative style');
+assert(source.indexOf("cssClass: 'label success'") >= 0,
+	'running status is missing the theme-aware success label');
+assert(source.indexOf("cssClass: 'label warning'") >= 0,
+	'unknown status is missing the theme-aware warning label');
+assert(source.indexOf("cssClass: 'label notice'") >= 0,
+	'working status is missing the theme-aware notice label');
+assert(source.indexOf('ifacebadge-active') < 0,
+	'status must not use the fixed black active badge border');
 assert(source.indexOf("'id': 'fakesip_service_buttons'") >= 0,
 	'service action group is missing its stable responsive identifier');
 assert(source.indexOf("'class': 'cbi-section-node'") >= 0,

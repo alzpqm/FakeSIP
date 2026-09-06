@@ -550,3 +550,43 @@ The 45-minute window is not complete at this snapshot.
 - Final router snapshot at `2026-09-05T09:56:04Z` retained PID 15844, RSS 924 kB,
   VmSize 1148 kB, one thread, five descriptors, and queue row packet ID 4926 with zero
   depth/kernel/user drops. No post-monitor anomaly or known temporary r20 file remained.
+
+## 2026-09-06 LuCI Dark-Mode Resume
+
+- The user reported that the FakeSIP LuCI night mode is visibly defective.
+- A live HTTP tunnel was established, but the Browser runtime had no available browser
+  and could not open the page. This is F-068; the tunnel was closed and no router state
+  changed.
+- The current view adds no custom colors and relies on generic LuCI classes. The next
+  step is to identify the router's active theme and inspect its exact dark-mode selectors
+  before changing markup or CSS.
+- Live Bootstrap CSS inspection found the concrete contrast defect: dark mode uses a
+  near-black page background while `.ifacebadge-active` hard-codes a black border, and
+  every service state otherwise shares nearly the same neutral badge. Positive/negative
+  button colors also require the standard `important` modifier in this theme.
+- The first combined source/test patch used one inexact array delimiter and was rejected
+  atomically (F-069). No product file changed; smaller exact-context patches are next.
+- The first Traditional Chinese completeness test reused JSON decoding for JavaScript
+  single-quoted strings and failed on the legal embedded `"sip:"` text (F-070). This is
+  a test-parser defect, not a PO verdict; separate syntax-aware decoders are required.
+- The first replacement JavaScript decoder accidentally returned the literal source
+  fragment `" + value + "` for every message (F-071). The test batch stopped before any
+  package or router operation; correct concatenation and a full clean rerun are required.
+- The next quote correction left one escape layer in the JavaScript file and failed its
+  syntax check before execution (F-072). Product files and router state remain unchanged;
+  use a double-quoted outer function-source string and restart all gates.
+- The first combined localization/docs patch was atomically rejected because one
+  OpenWrt README paragraph had different line wrapping (F-073). No document content was
+  partially changed; continue with small exact-context patches.
+- A subsequent full README replacement was rejected because one patch attempted both
+  delete and add operations on the same path (F-074). No README changed; perform those
+  operations separately.
+- The next OpenWrt docs attempt mistakenly retained the same wrapping assumption and was
+  rejected again (F-075). Numbered lines now provide exact small-hunk anchors; do not
+  bundle the new translated guide with those existing-file edits.
+- A direct Gemini review attempt again failed at Code Assist onboarding with an invalid
+  product license (HTTP 403), and the CLI also reported missing workspace trust (F-076).
+  It changed nothing and provides no review verdict; do not retry or claim approval.
+- The first pre-r21 router snapshot reached Debian but its nested `natter-openwrt` alias
+  did not resolve (F-077). No router command ran; use the explicit authorized router
+  address and port after checking jump-host SSH tooling.
