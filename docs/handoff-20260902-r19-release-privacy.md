@@ -83,3 +83,21 @@ Default-branch integration also avoided GitHub's server-generated merge path bec
 prior merge demonstrated that it would attach an account-linked personal email. Pull
 request 7 was instead completed by pushing a local ordinary merge whose author and
 committer are both `Codex <codex@local.invalid>`.
+
+## 2026-09-06 r21 Privacy Addendum
+
+The r21 release boundary contains only two OpenWrt 25+ APKs and `SHA256SUMS`; no IPK is
+published. APK metadata and extracted contents were scanned for credentials, personal
+paths, jump-host aliases, private router endpoints, cloud project identifiers, private
+keys, and account tokens. All packaged files are root-owned and no matching private
+identifier was found.
+
+The new English and Traditional Chinese public documentation uses only the generic
+example router address `192.168.1.1`. The real router backup remains private on router,
+Debian, and local backup storage and is not a release asset. Newly added handoff text was
+redacted to avoid recording the actual SSH endpoint.
+
+Both r21 commits use `Codex <codex@local.invalid>` for author and committer. Gemini was
+requested once, but Code Assist returned HTTP 403 before inference and the workspace was
+not trusted; no Gemini approval is claimed. Release acceptance relies on executable
+tests, artifact inspection, and live OpenWrt evidence.

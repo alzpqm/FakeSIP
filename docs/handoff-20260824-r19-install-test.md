@@ -188,3 +188,28 @@ The service remained running with queue 513 drops at zero.
 A later final snapshot at `2026-09-05T09:56:04Z` kept PID 15844, RSS 924 kB, VmSize
 1148 kB, one thread, five descriptors, and queue packet ID 4926 with zero depth/kernel/
 user drops. No post-monitor FakeSIP anomaly or known temporary r20 file was present.
+
+## 2026-09-06 r21 Install Addendum
+
+The router was upgraded in place from r20 to synchronized `0.9.1-r21` APKs:
+
+```text
+7d343329c1732c3231b8903050102634c383e8124243db78ba18e71eebf8f004  fakesip-0.9.1-r21.apk
+6b5ccdbc57bb93a2642d3f7634b0cc7d794890eec8adee364106c7e6e3d3e069  luci-app-fakesip-0.9.1-r21.apk
+```
+
+The pre-install archive `fakesip-backup-pre-r21-20260906T0040Z.tgz` has SHA-256
+`91b43d2e279f066021968b4a0115b8b7063aad1ea9deed5fa3e7c93f196c16a3`;
+identical copies were verified on router, Debian, and local backup storage. It remains
+private because it contains device configuration.
+
+UCI SHA-256 remained
+`39ab69d7186e434262e5fc59a2b4dae4224894fa92392c8cefb2688e38ff6fbc`.
+The service retained both observed SIP URIs, three PPPoE devices, outbound IPv4/IPv6,
+silent mode, queue 513, repeat 1, TTL 3, and fwmark/mask. Installed LMO, LuCI JS, binary,
+and init hashes matched APK extraction.
+
+After almost six hours, PID 29708 was unchanged and queue packet ID advanced from 210 to
+259760 with zero depth, kernel drop, and user drop. VmSize was 1148 kB, RSS 852 kB,
+RssAnon 164 kB, threads 1, and descriptors 5. No filtered severe runtime diagnostic was
+present. Temporary r21 APKs and the reviewed package-default `.apk-new` were removed.

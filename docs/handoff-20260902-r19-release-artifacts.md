@@ -115,3 +115,27 @@ recorded below.
   passed the downloaded checksum file byte for byte.
 - Pull request 7 integrated the release branch into the default branch at anonymous merge
   commit `bc254fef86e485006ce8a883dbe9b1261f4e239d`.
+
+## 2026-09-06 r21 Candidate Addendum
+
+- Functional source pin: `bbcc1bf0d2981d64d90f69b264424d1a7ef18a41`.
+- Synchronized recipe commit: `d00c95cb8ef89be9aa31c7ae27f77e29e5db57af`.
+- Core and LuCI package versions: `0.9.1-r21`.
+- Release policy: OpenWrt 25+ APK only; older OpenWrt users build IPKs from source with
+  the matching SDK.
+
+```text
+7d343329c1732c3231b8903050102634c383e8124243db78ba18e71eebf8f004  fakesip-0.9.1-r21.apk
+6b5ccdbc57bb93a2642d3f7634b0cc7d794890eec8adee364106c7e6e3d3e069  luci-app-fakesip-0.9.1-r21.apk
+```
+
+Direct OpenWrt 25.12.5 x86_64 construction produced exactly those two APKs. Metadata and
+extraction verified synchronized versions, x86_64 architecture, root ownership, config
+0600, executable binary/init 0755, LuCI files 0644, and the embedded 3044-byte
+`fakesip.zh-tw.lmo`. The LuCI APK was installed and its LMO loaded successfully under
+the router's `zh_tw` language setting.
+
+The optional standard recipe check was interrupted after a stateful SDK config selected
+an unrelated full kernel package build; it supplies no verdict and is documented as
+F-079. The direct builder, package smoke test, Linux suite, extracted artifacts, and live
+installation form the candidate evidence.

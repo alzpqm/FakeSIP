@@ -590,3 +590,44 @@ The 45-minute window is not complete at this snapshot.
 - The first pre-r21 router snapshot reached Debian but its nested `natter-openwrt` alias
   did not resolve (F-077). No router command ran; use the explicit authorized router
   address and port after checking jump-host SSH tooling.
+- The first r21 push used `origin`, which currently points to the read-only upstream, and
+  GitHub rejected it with HTTP 403 (F-078). The local commits are intact; identify the
+  authorized fork remote, push there, and verify its exact ref before SDK build.
+- The optional standard SDK recipe check reused a stateful `.config` and expanded into a
+  full unrelated kernel package build, so it was interrupted and is not a valid verdict
+  (F-079). Direct r21 APK construction and artifact inspection passed; clean only the two
+  added recipe directories and prove the LMO on the router instead.
+- The r21 APK upgrade itself succeeded and preserved UCI, but BusyBox find rejected the
+  unsupported LuCI-cache `-delete` action; fail-fast stopped before FakeSIP restart
+  (F-080). Recover immediately with `-exec rm -f`, start only FakeSIP, and rerun every
+  post-install check.
+- The post-install 60-second monitor emitted its start snapshot, but the context
+  transition closed the execution session before its final output could be retrieved
+  (F-081). Avoid repeating the wait; compare one current snapshot with PID 29708 and
+  queue packet ID 210, both already captured with zero drops.
+- The first follow-up snapshot was blocked locally by a temporary restricted network
+  sandbox before reaching Debian (F-082). No remote state changed; retry exactly once
+  now that the user restored full access.
+- The first combined r21 release/handoff patch ended with an empty update hunk and was
+  atomically rejected (F-083). No release file or addendum changed; split the operation
+  and read privacy/artifact tails before patching them.
+- The next addendum batch used the wrong capitalization for the privacy document's final
+  `pull request` line and was atomically rejected (F-084). Append each document using its
+  exact final paragraph.
+- The privacy-only retry also missed that `Pull request` is split across two physical
+  lines and was rejected (F-085). Exact numbered and byte output is now available.
+
+## 2026-09-06 r21 Installed Candidate State
+
+- Functional commit: `bbcc1bf0d2981d64d90f69b264424d1a7ef18a41`.
+- Synchronized r21 recipe commit: `d00c95cb8ef89be9aa31c7ae27f77e29e5db57af`.
+- Debian full Linux regression and direct OpenWrt 25 APK build passed.
+- Candidate APK SHA-256 values are `7d343329...f004` for core and
+  `6b5ccdbc...e069` for LuCI. No r21 IPK was built or will be published.
+- Router UCI SHA remained `39ab69d...6fbc`; installed file hashes match extraction.
+- LuCI `zh_tw` loaded the embedded catalog and returned the expected Traditional Chinese
+  strings. Browser screenshot coverage remains unavailable and is not claimed.
+- After nearly six hours, PID 29708 remained stable, queue packet ID reached 259760, and
+  depth/kernel/user drops remained zero. RSS was 852 kB with one thread and five FDs.
+- Temporary r21 APKs and `/etc/config/fakesip.apk-new` were removed. The private rollback
+  archive exists in three verified locations with SHA-256 `91b43d...16a3`.

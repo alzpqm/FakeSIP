@@ -279,3 +279,24 @@ VmSize 1148 kB. RSS settled at 924 kB. Queue 513 packet ID advanced from 270 to 
 all 16 samples had depth, kernel drop, and user drop equal to zero. One PPPoE interface
 had a pre-window cumulative RX drop of one, but it did not increase. No new OOM,
 segfault, NFQUEUE failure, verdict failure, or forced termination was observed.
+
+## 2026-09-06 r21 Findings
+
+No catastrophic or high-severity runtime defect was found before r21.
+
+The LuCI night-mode defect was concrete: Bootstrap dark mode uses a near-black page
+background while `ifacebadge-active` retains a black border, making service states hard
+to distinguish. Status now uses Bootstrap's theme-aware `label success`, `label warning`,
+and `label notice` classes. Start and Stop use the `important` modifier for filled
+positive/negative contrast. Static behavior tests forbid the old active badge.
+
+All 76 LuCI messages have nonempty Traditional Chinese translations with matching format
+placeholders. The LuCI APK embeds `fakesip.zh-tw.lmo`; the installed router's LuCI i18n
+loader returned the expected translations for Running, Working, and OpenWrt network
+selection under `zh_tw`.
+
+Linux sanitizer/CLI regression, OpenWrt init/LuCI/package smoke, direct OpenWrt 25 APK
+build, APK metadata/content/ownership inspection, and live installation passed. The
+optional normal recipe check was invalid because a stateful SDK config expanded into an
+unrelated full kernel package build; it was interrupted and recorded as F-079, not
+counted as evidence. No IPK was built for r21 by policy.

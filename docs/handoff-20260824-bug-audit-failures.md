@@ -1211,3 +1211,113 @@ not failures.
 - Correction: inspect only the jump host's SSH configuration/tool availability, then
   connect to its explicitly configured authorized router endpoint without relying on an
   alias and rerun the complete read-only snapshot.
+
+## F-078: r21 Push Targeted The Read-Only Upstream Remote
+
+- Date observed: 2026-09-06
+- Scope: push the anonymous r21 functional and synchronized-version commits
+- Result: GitHub returned HTTP 403, reporting that the authenticated fork owner lacked
+  permission to write to `MikeWang000000/FakeSIP`.
+- Cause: the local `origin` remote currently points to the upstream repository, despite
+  older handoff context referring to the writable fork.
+- Impact: both local commits remain intact and no remote ref, package, router, or release
+  changed. A normal SDK fetch of the new pinned commit is not yet possible from the fork.
+- Correction: inspect configured remotes, select or add the existing authorized
+  `alzpqm/FakeSIP` fork without rewriting history, push the exact current branch there,
+  and verify the remote ref before SDK build.
+
+## F-079: Standard SDK Recipe Check Expanded Into A Full Kernel Package Build
+
+- Date observed: 2026-09-06
+- Scope: validate the r21 LuCI `po2lmo` recipe through OpenWrt's normal package compile
+- Result: the SDK began rebuilding a very large set of unrelated kernel packages because
+  its existing `.config` selected them. The check was intentionally interrupted before
+  reaching a valid FakeSIP/LuCI recipe verdict.
+- Cause: running `make defconfig` followed by the combined package targets reused a
+  stateful SDK configuration instead of a minimal package-only selection.
+- Impact: this normal-recipe attempt is invalid and is not counted as passing. The
+  already completed direct r21 APK build and artifact inspection remain valid. No router
+  or GitHub release state changed. The SDK accumulated unrelated build outputs.
+- Correction: confirm no matching make process remains, remove only the two recipe
+  directories added by this attempt, retain the inspected direct APKs, and validate LMO
+  loading through the real OpenWrt installation. A future normal-recipe check must use a
+  disposable minimal SDK config rather than this stateful tree.
+
+## F-080: BusyBox find Rejected The LuCI Cache Cleanup Action
+
+- Date observed: 2026-09-06
+- Scope: install r21 APKs, preserve UCI, clear LuCI cache, and restart FakeSIP
+- Result: both APK upgrades completed successfully, but BusyBox `find` rejected the
+  unsupported `-delete` action. With `set -e`, the command stopped before starting the
+  service, leaving FakeSIP temporarily inactive.
+- Cause: the cleanup command used a GNU/macOS find action unavailable in the router's
+  BusyBox find implementation.
+- Impact: r21 packages are installed and the UCI before/after hash assertion passed, but
+  the immediate post-install service/queue/LMO checks did not run. No other service,
+  queue, firewall, mwan, or NAT state was touched.
+- Correction: use BusyBox-supported `find ... -exec rm -f {} +`, start only FakeSIP,
+  confirm the r21 package versions, formal parameters, PID, queue 513 zero drops, LMO and
+  LuCI hashes, then retain this failure so future installs never reuse `-delete`.
+
+## F-081: Context Transition Lost The 60-Second Monitor Completion Output
+
+- Date observed: 2026-09-06
+- Scope: post-r21 60-second PID, CPU, memory, queue 513, and log observation
+- Result: the monitor printed its start snapshot, then the conversation context changed;
+  polling the recorded session returned `Unknown process id`, so its end output was not
+  available to this task.
+- Cause: the execution session closed during the context transition after the remote
+  command's first 30-second yield.
+- Impact: start evidence remains PID 29708 and queue packet ID 210 with zero depth/kernel/
+  user drops, but this specific 60-second sample has no captured completion verdict.
+- Correction: do not repeat the full wait. Read the current PID and queue row once; if
+  PID is unchanged, packet ID advanced, and drops remain zero, use that larger elapsed
+  interval as the post-install stability evidence.
+
+## F-082: Temporary Sandbox Policy Blocked The Follow-Up SSH Snapshot
+
+- Date observed: 2026-09-06
+- Scope: retrieve the single post-r21 snapshot specified by F-081
+- Result: SSH was rejected before reaching Debian with `Operation not permitted`.
+- Cause: the session temporarily changed to a restricted network sandbox policy.
+- Impact: no remote command ran and router state was untouched. Earlier successful r21
+  install, service, queue, file-hash, and translation-load evidence remains valid.
+- Correction: after the user restored full access, run the same single snapshot once,
+  then clean only the known r21 temporary APK and reviewed package-default file.
+
+## F-083: r21 Handoff Patch Ended With An Empty Update Hunk
+
+- Date observed: 2026-09-06
+- Scope: create r21 release files and append results to four handoff documents
+- Result: `apply_patch` rejected the entire patch as invalid because its final privacy
+  document update hunk contained no context or changed lines.
+- Cause: a placeholder update header was accidentally left at the end of the composed
+  patch before the privacy document's current tail had been read.
+- Impact: the patch was atomic; no release file or handoff addendum was created by this
+  attempt. Router r21 remained running and unchanged.
+- Correction: split release-file creation and known exact handoff appends from the
+  privacy/artifact updates; read those two files before constructing their hunks.
+
+## F-084: Privacy Addendum Anchor Used Wrong Capitalization
+
+- Date observed: 2026-09-06
+- Scope: append r21 privacy, artifact, and context summaries
+- Result: `apply_patch` rejected the combined patch because the privacy file ends with
+  lowercase `Pull request`, while the patch expected uppercase `Pull request`.
+- Cause: the final line was manually recased while composing the context anchor.
+- Impact: the operation was atomic; none of the three addenda changed and router/release
+  state was untouched.
+- Correction: copy each exact final paragraph from the file and append each addendum in
+  an independent hunk.
+
+## F-085: Privacy Anchor Split `Pull request` Across Lines
+
+- Date observed: 2026-09-06
+- Scope: append the r21 privacy addendum independently
+- Result: `apply_patch` rejected the hunk because the final paragraph wraps `Pull` at the
+  end of one line and `request 7` at the beginning of the next.
+- Cause: the retry changed capitalization but still assumed both words occupied the same
+  line.
+- Impact: no privacy text, release file, or router state changed.
+- Correction: use the exact four-line final paragraph shown by numbered/hex output as the
+  append anchor.
