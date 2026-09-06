@@ -139,3 +139,18 @@ The optional standard recipe check was interrupted after a stateful SDK config s
 an unrelated full kernel package build; it supplies no verdict and is documented as
 F-079. The direct builder, package smoke test, Linux suite, extracted artifacts, and live
 installation form the candidate evidence.
+
+## 2026-09-06 Published r21 Assets
+
+Release URL: `https://github.com/alzpqm/FakeSIP/releases/tag/v0.9.1-openwrt-r21`
+
+The final remote asset set is exactly:
+
+```text
+fakesip-0.9.1-r21.apk
+luci-app-fakesip-0.9.1-r21.apk
+SHA256SUMS
+```
+
+A fresh download of all three files passed the checksum manifest. Existing older
+release pages and locally retained historical IPKs were not changed.

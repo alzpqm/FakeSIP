@@ -300,3 +300,10 @@ build, APK metadata/content/ownership inspection, and live installation passed. 
 optional normal recipe check was invalid because a stateful SDK config expanded into an
 unrelated full kernel package build; it was interrupted and recorded as F-079, not
 counted as evidence. No IPK was built for r21 by policy.
+
+## 2026-09-06 Final Verdict
+
+No catastrophic, high-severity, or release-blocking defect was found in the r21 scope.
+The published GitHub artifacts were downloaded afresh and matched the release checksum
+manifest. This verdict applies to r21 on the tested OpenWrt 25 target; older releases are
+unsupported and were not modified during final publication.

@@ -213,3 +213,9 @@ After almost six hours, PID 29708 was unchanged and queue packet ID advanced fro
 259760 with zero depth, kernel drop, and user drop. VmSize was 1148 kB, RSS 852 kB,
 RssAnon 164 kB, threads 1, and descriptors 5. No filtered severe runtime diagnostic was
 present. Temporary r21 APKs and the reviewed package-default `.apk-new` were removed.
+
+## 2026-09-06 r21 Publication Check
+
+The installed candidate became the published `v0.9.1-openwrt-r21` release without a
+binary rebuild. Freshly downloaded GitHub assets reproduced the two recorded APK hashes,
+so the tested router installation and public artifacts are byte-identical.

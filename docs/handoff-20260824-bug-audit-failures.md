@@ -1321,3 +1321,38 @@ not failures.
 - Impact: no privacy text, release file, or router state changed.
 - Correction: use the exact four-line final paragraph shown by numbered/hex output as the
   append anchor.
+
+## 2026-09-06 Final Continuation
+
+At this checkpoint, no new command, build, installation, router, or publication failure
+had occurred after F-085. The requested cleanup of historical release assets was
+explicitly cancelled before any remote change, so older GitHub releases remained
+untouched.
+
+## F-086: Final Download Check Rejected by Command Policy
+
+- Date observed: 2026-09-06
+- Scope: fresh r21 GitHub download, checksum verification, and short local smoke checks
+- Result: the command was rejected before execution because its EXIT trap contained a
+  recursive removal of the temporary directory.
+- Impact: no download, test, repository, release, router, or historical asset changed.
+- Correction: rerun the checks in a uniquely created temporary directory without an
+  automatic deletion command; retain the harmless downloaded verification files.
+
+## F-087: LuCI i18n Test Invoked Without Required Paths
+
+- Date observed: 2026-09-06
+- Scope: final local LuCI translation and OpenWrt package smoke checks
+- Result: direct `node tests/test_luci_i18n.js` exited with its usage error because the
+  LuCI view path and PO path arguments were omitted; the following `&&` smoke check did
+  not run.
+- Impact: no source, package, release, router, or historical asset changed. This was an
+  invocation error, not a product failure.
+- Correction: use the same two paths passed by `tools/openwrt-package-smoke-test.sh`,
+  then run the complete smoke script independently.
+
+## 2026-09-06 Final Recovery Result
+
+The corrected fresh-download check found exactly three r21 assets and both APKs passed
+`SHA256SUMS`. The correctly invoked i18n test passed all 76 messages, and the complete
+OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved impact.

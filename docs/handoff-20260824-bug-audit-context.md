@@ -631,3 +631,14 @@ The 45-minute window is not complete at this snapshot.
   depth/kernel/user drops remained zero. RSS was 852 kB with one thread and five FDs.
 - Temporary r21 APKs and `/etc/config/fakesip.apk-new` were removed. The private rollback
   archive exists in three verified locations with SHA-256 `91b43d...16a3`.
+
+## 2026-09-06 r21 Final Publication
+
+- Annotated tag `v0.9.1-openwrt-r21` points to commit
+  `36650e6b636806ed00458b9593adbd29ca24ae05`.
+- The public release is `https://github.com/alzpqm/FakeSIP/releases/tag/v0.9.1-openwrt-r21`.
+- The release contains exactly the two OpenWrt 25+ APKs and `SHA256SUMS`; no IPK or
+  private backup is present.
+- A fresh GitHub download passed `shasum -a 256 -c SHA256SUMS` for both APKs.
+- Older release pages and their historical assets were intentionally left unchanged;
+  they are unsupported, and users of older OpenWrt versions must build from source.

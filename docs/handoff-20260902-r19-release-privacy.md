@@ -101,3 +101,7 @@ Both r21 commits use `Codex <codex@local.invalid>` for author and committer. Gem
 requested once, but Code Assist returned HTTP 403 before inference and the workspace was
 not trusted; no Gemini approval is claimed. Release acceptance relies on executable
 tests, artifact inspection, and live OpenWrt evidence.
+
+The final release was published from the anonymous `Codex <codex@local.invalid>` commit
+and annotated tag. A post-publication asset listing confirmed exactly two APKs and one
+checksum manifest. Historical release pages were not edited or deleted.
