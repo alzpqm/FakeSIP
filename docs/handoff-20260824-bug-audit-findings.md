@@ -320,3 +320,9 @@ and ADC, service-account credentials, or a Google Cloud API key. None of those V
 credentials or tools is installed locally. The separate `gemini-api` project exists but
 is explicitly experimental and not a supported Google product, so it was not installed
 as a replacement for the stable coding CLI.
+
+The user-authorized Auth key was accepted by the corrected Gemini API endpoint, proving
+that its format and authentication path work. The request failed only after authentication
+with `RESOURCE_EXHAUSTED: prepayment credits are depleted`. Google Workspace Business
+Standard does not supply Developer API credit; the key's Cloud project must separately
+enable Gemini API billing/prepay, or remain subject to a Free-tier project's limits.

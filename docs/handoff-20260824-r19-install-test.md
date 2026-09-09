@@ -225,5 +225,6 @@ so the tested router installation and public artifacts are byte-identical.
 The host Gemini CLI was upgraded from 0.53.0 to stable 0.59.0. A clean OAuth prompt test
 failed at authentication with `UNSUPPORTED_CLIENT` and made no model request. The global
 selected auth type is now `gemini-api-key`. The `gemini-authkey` Keychain launcher passed
-`sh -n`, resolves from a fresh Bash login shell, and reports the expected help text. No
-Gemini key was available, so a live API-key request was not and could not be claimed.
+`sh -n`, resolves from a fresh Bash login shell, and reports the expected help text. The
+subsequently authorized key was stored in Keychain and accepted by the API endpoint, but
+the request returned `RESOURCE_EXHAUSTED` because prepaid API credits were depleted.

@@ -108,8 +108,9 @@ checksum manifest. Historical release pages were not edited or deleted.
 
 ## 2026-09-09 Gemini Credential Boundary
 
-No Gemini API key, Google Cloud API key, service-account file, ADC token, or plaintext
-credential was found, created, printed, or committed. The replacement launcher stores a
-future user-entered Auth key in macOS Keychain and passes it only through the Gemini child
-process environment; its source contains no credential. The existing shell Cloud Project
-setting was left intact for other tools and is suppressed only inside the launcher.
+Initial inspection found no Gemini API key, Google Cloud API key, service-account file,
+or ADC token. The user later explicitly supplied and authorized a Gemini key for agent
+use. It was stored in macOS Keychain and passed only through the Gemini child process
+environment; its value was not printed, copied into these handoffs, committed, or added
+to the launcher source. The existing shell Cloud Project setting was left intact for
+other tools and is suppressed only inside the launcher.

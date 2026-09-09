@@ -1401,3 +1401,76 @@ OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved 
   manual multi-file anchoring error as F-090.
 - Correction: stop composing cross-file patches for this update; apply and verify one
   exact end-of-file addition at a time.
+
+## F-092: Official Billing Search Wrapper Contained Prose
+
+- Date observed: 2026-09-09
+- Scope: search official Google documentation for Workspace and Gemini API billing
+- Result: the local JavaScript wrapper failed to parse because explanatory prose was
+  accidentally placed in the executable tool input.
+- Impact: no web request ran and the user-provided credential was not included, used, or
+  stored by the tool.
+- Correction: submit only a minimal `web__run` call with credential-free search terms.
+
+## F-093: First Search Retry Used an Invalid Placeholder
+
+- Date observed: 2026-09-09
+- Scope: retry the official Google billing search
+- Result: the local wrapper again failed before execution because it contained an invalid
+  placeholder instead of a JavaScript initializer.
+- Impact: no web request, credential handling, billing action, or project change occurred.
+- Correction: use a literal, validated `const result = await tools.web__run(...)` wrapper;
+  the following official searches completed successfully without credentials.
+
+## F-094: Handoff Tail Command Had a Malformed Parameter Name
+
+- Date observed: 2026-09-09
+- Scope: read the current context and failure tails before recording F-092 and F-093
+- Result: the local tool wrapper failed to parse due to a malformed `workdir` parameter.
+- Impact: the shell command did not start and no credential, repository, or external state
+  was touched.
+- Correction: rerun with the standard `exec_command` object; the tail read then succeeded.
+
+## F-095: Authorized Gemini API Request Had No Prepaid Balance
+
+- Date observed: 2026-09-09
+- Scope: test the user-authorized Gemini Auth key against the corrected raw
+  `generateContent` endpoint
+- Result: the key was accepted, but the API returned `RESOURCE_EXHAUSTED` because its
+  project's prepaid Gemini API credits were depleted.
+- Impact: no model response was generated and no project, billing, repository, or router
+  setting changed. The credential value was not printed or written to the repository.
+- Correction: add prepaid Gemini API credit or link the key's project to an eligible paid
+  billing setup; alternatively use a key from a separate Free-tier project within its
+  free model and quota limits.
+
+## F-096: Current Tool Shell Did Not Reload the New Local-Bin PATH
+
+- Date observed: 2026-09-09
+- Scope: verify the Keychain launcher using its short command name
+- Result: the current tool shell reported `gemini-authkey: command not found` because it
+  had not reloaded the updated Bash login profile. The following auth and version checks
+  still completed.
+- Impact: the launcher, Keychain entry, Gemini CLI, and configuration were unchanged.
+- Correction: invoke the launcher by its absolute path in the current tool environment;
+  that check confirmed the authorized key is present in macOS Keychain.
+
+## F-097: Failure Addendum Used the Wrong F-094 Heading
+
+- Date observed: 2026-09-09
+- Scope: append F-095 and F-096 to the cumulative failure log
+- Result: `apply_patch` rejected the first attempt because it guessed a heading that did
+  not match the actual F-094 title.
+- Impact: the operation was atomic and changed no file or external state.
+- Correction: read the exact file tail before applying the append.
+
+## F-098: Failure Entry Contained Two Invalid Trailing Fragments
+
+- Date observed: 2026-09-09
+- Scope: record F-095 and F-096
+- Result: the accepted patch accidentally ended F-096 with two unrelated malformed text
+  fragments instead of a valid impact and correction.
+- Impact: only the uncommitted Markdown handoff was temporarily malformed; no Base64 was
+  regenerated, no commit was made, and no system or credential state changed.
+- Correction: replace both fragments with the verified F-096 impact and correction, then
+  record this error before regenerating and comparing the handoff Base64 files.

@@ -693,5 +693,7 @@ The 45-minute window is not complete at this snapshot.
 - A local `gemini-authkey` launcher was installed in `~/.local/bin` with mode 0700 and
   added to the Bash login PATH. It stores a user-entered key in macOS Keychain, retrieves
   it only into the child process environment, and locally unsets Code Assist/Vertex
-  variables before starting Gemini CLI. Its shell syntax and help path passed; no key
-  has been created or stored yet.
+  variables before starting Gemini CLI. Its shell syntax and help path passed. The user
+  then explicitly supplied and authorized a key for agent use; it was stored only in
+  Keychain. A corrected raw API request accepted the key but returned
+  `RESOURCE_EXHAUSTED` because the associated project's prepaid credits were depleted.
