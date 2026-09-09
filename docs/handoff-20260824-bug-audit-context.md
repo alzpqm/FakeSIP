@@ -701,3 +701,9 @@ The 45-minute window is not complete at this snapshot.
   Shell must use its native `gemini` command after setting `GEMINI_API_KEY` for that
   session and selecting Gemini API Key with `/auth`. The attempted Mac launcher command
   made no request and is recorded as F-099.
+- Cloud Shell subsequently returned 401 `ACCESS_TOKEN_TYPE_UNSUPPORTED`, showing it still
+  routed through an OAuth/token configuration instead of API-key authentication. The Mac
+  CLI accepted the same key and reached only the known 429 prepaid-credit barrier, which
+  rules out an Auth-key compatibility problem. Cloud Shell must explicitly set
+  `security.auth.selectedType` to `gemini-api-key`; billing credit remains the independent
+  second blocker.

@@ -1485,3 +1485,15 @@ OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved 
 - Correction: in Cloud Shell, enter the key with hidden `read -s`, export
   `GEMINI_API_KEY`, select Gemini API Key once through `/auth`, and then use the native
   `gemini` command. Do not escape underscores inside the quoted prompt.
+
+## F-100: Local Gemini CLI Retried a Known Depleted-Credit Error
+
+- Date observed: 2026-09-09
+- Scope: distinguish Cloud Shell's 401 auth-path error from Auth-key compatibility
+- Result: the Mac Gemini CLI accepted the same authorized key and repeatedly received the
+  expected 429 depleted-prepayment response; its automatic retry loop was interrupted.
+- Impact: no model output was produced and no configuration, billing, repository, or
+  router state changed. The test proved the key and Gemini CLI are compatible.
+- Correction: do not repeat inference tests until the API project has usable prepaid
+  credit; reset Cloud Shell to `gemini-api-key` separately to eliminate its stale OAuth
+  401 path.
