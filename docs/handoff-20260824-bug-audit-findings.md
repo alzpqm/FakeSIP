@@ -307,3 +307,16 @@ No catastrophic, high-severity, or release-blocking defect was found in the r21 
 The published GitHub artifacts were downloaded afresh and matched the release checksum
 manifest. This verdict applies to r21 on the tested OpenWrt 25 target; older releases are
 unsupported and were not modified during final publication.
+
+## 2026-09-09 Gemini Authentication Finding
+
+Gemini CLI's cached personal OAuth path is no longer usable for this account: version
+0.59.0 returned `UNSUPPORTED_CLIENT` for the retired individual Code Assist tier even
+with the old Cloud Project variables removed. The supported replacement for direct CLI
+use is a newly generated Google AI Studio Auth key supplied as `GEMINI_API_KEY`.
+
+This is distinct from Vertex AI, which requires a Cloud project, location, enabled API,
+and ADC, service-account credentials, or a Google Cloud API key. None of those Vertex
+credentials or tools is installed locally. The separate `gemini-api` project exists but
+is explicitly experimental and not a supported Google product, so it was not installed
+as a replacement for the stable coding CLI.

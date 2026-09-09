@@ -154,3 +154,9 @@ SHA256SUMS
 
 A fresh download of all three files passed the checksum manifest. Existing older
 release pages and locally retained historical IPKs were not changed.
+
+## 2026-09-09 Non-Release Gemini Setup
+
+The Gemini CLI upgrade, global auth selection, and local Keychain launcher are host-side
+developer tooling only. They are not tracked FakeSIP source, APK content, GitHub release
+assets, or router configuration. The published r21 asset set and hashes remain unchanged.

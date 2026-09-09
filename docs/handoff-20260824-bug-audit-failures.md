@@ -1356,3 +1356,48 @@ untouched.
 The corrected fresh-download check found exactly three r21 assets and both APKs passed
 `SHA256SUMS`. The correctly invoked i18n test passed all 76 messages, and the complete
 OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved impact.
+
+## F-088: Cross-Thread Coordination Reply Blocked by Approval Policy
+
+- Date observed: 2026-09-09
+- Scope: acknowledge a FakeHTTP A/B/A coordination window in its source thread
+- Result: `send_message_to_thread` was rejected because the tool requested approval
+  while the active approval policy was `never`.
+- Impact: no repository, router, FakeSIP, FakeHTTP, NFQUEUE, or routing state changed.
+  The stable queue 513 window was acknowledged in the current thread instead.
+- Correction: keep FakeSIP/queue513 unchanged for at least 20 minutes and wait for the
+  FakeHTTP completion delegation; do not retry the approval-gated tool in this policy.
+
+## F-089: Gemini OAuth Clean-Room Retry Rejected as Ineligible
+
+- Date observed: 2026-09-09
+- Scope: Gemini CLI 0.59.0 authentication test with API keys, Vertex flags, and the old
+  Cloud Project variables removed from the process environment
+- Result: Google returned `IneligibleTierError` with reason `UNSUPPORTED_CLIENT`; the
+  cached account was classified as the retired Gemini Code Assist individual free tier.
+- Impact: no model inference or tool call ran, no credential was printed or changed, and
+  no FakeSIP/router/GitHub state changed. The npm upgrade itself succeeded.
+- Correction: do not retry personal Code Assist OAuth. Use a new Google AI Studio Gemini
+  Auth key through `GEMINI_API_KEY`, or provision Vertex AI with gcloud ADC and the
+  required API/IAM/billing configuration. This Mac currently has neither gcloud nor ADC.
+
+## F-090: Gemini Handoff Addendum Used a Stale Context Anchor
+
+- Date observed: 2026-09-09
+- Scope: append Gemini authentication findings across the cumulative handoff files
+- Result: `apply_patch` rejected the combined patch because its context anchor no longer
+  matched the current end of the context file.
+- Impact: the operation was atomic; no handoff, Base64, system authentication, or project
+  file was partially changed.
+- Correction: read the exact current file tail and append each file independently.
+
+## F-091: Retry Reused a Malformed Failure-File Anchor
+
+- Date observed: 2026-09-09
+- Scope: retry the context and failure handoff additions
+- Result: `apply_patch` again rejected the combined patch because the failure-file anchor
+  contained text that never existed in the document.
+- Impact: the operation was atomic and changed nothing. This repeated the same class of
+  manual multi-file anchoring error as F-090.
+- Correction: stop composing cross-file patches for this update; apply and verify one
+  exact end-of-file addition at a time.

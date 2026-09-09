@@ -219,3 +219,11 @@ present. Temporary r21 APKs and the reviewed package-default `.apk-new` were rem
 The installed candidate became the published `v0.9.1-openwrt-r21` release without a
 binary rebuild. Freshly downloaded GitHub assets reproduced the two recorded APK hashes,
 so the tested router installation and public artifacts are byte-identical.
+
+## 2026-09-09 Local Gemini CLI Setup
+
+The host Gemini CLI was upgraded from 0.53.0 to stable 0.59.0. A clean OAuth prompt test
+failed at authentication with `UNSUPPORTED_CLIENT` and made no model request. The global
+selected auth type is now `gemini-api-key`. The `gemini-authkey` Keychain launcher passed
+`sh -n`, resolves from a fresh Bash login shell, and reports the expected help text. No
+Gemini key was available, so a live API-key request was not and could not be claimed.

@@ -642,3 +642,56 @@ The 45-minute window is not complete at this snapshot.
 - A fresh GitHub download passed `shasum -a 256 -c SHA256SUMS` for both APKs.
 - Older release pages and their historical assets were intentionally left unchanged;
   they are unsupported, and users of older OpenWrt versions must build from source.
+
+## 2026-09-09 FakeHTTP Candidate Coordination Window
+
+- FakeHTTP requested a short A/B/A test window for two user-supplied cloud-storage
+  hostname candidates.
+- From the acknowledgement onward, FakeSIP/queue513 is reserved in its formal state for
+  at least 20 minutes: no restart, stop, configuration change, or new routing mark.
+- No queue512/FakeHTTP state will be read or modified from this workspace.
+- The cross-thread reply tool was approval-blocked before execution and is recorded as
+  F-088; the current-thread acknowledgement is the operative coordination record.
+- FakeHTTP's first source-bound curl matrix was invalidated because packet capture showed
+  transparent-proxy routing sent all three nominal sources through wan2. That data must
+  not be used. FakeHTTP restored its state and began a narrower check for destination
+  `120.46.63.139:443` using temporary source ports 43000-43099 to bypass the proxy and
+  verify each egress with packet capture before A/B. FakeSIP/queue513 remains unchanged
+  for this additional window.
+
+## 2026-09-09 FakeHTTP Candidate Result
+
+- The valid direct window ran from 00:41:27 to 00:48:40 Asia/Taipei and used 45 fixed-IP
+  32 MiB transfers to `120.46.63.139`; 30 completed and 15 timed out, including 14 on
+  wanct and one on wancm.
+- Against bracketing controls, wan2 measured -0.71% for the China Mobile candidate and
+  +1.73% for the China Telecom candidate. Wancm measured +9.05% and -15.05%, while both
+  wanct candidates completed 0/3 runs. The candidates were rejected because they did not
+  improve consistently across the three links.
+- FakeHTTP restored its byte-identical formal configuration with silent mode enabled;
+  its temporary source routes and two test-return rules were removed. Its later health
+  check reported PID 31540 and queue512 with zero drops.
+- FakeHTTP did not read or modify queue513. The FakeSIP stability reservation is now
+  released, and none of these FakeHTTP candidates changes the r21 FakeSIP release.
+
+## 2026-09-09 Gemini CLI Authentication Audit
+
+- The installed official `@google/gemini-cli` was upgraded successfully from 0.53.0 to
+  npm stable 0.59.0.
+- The cached auth type was `oauth-personal`; a clean retry without the historical Cloud
+  Project variable failed as `UNSUPPORTED_CLIENT` because Google retired Gemini Code
+  Assist for individual free-tier use in this client. See F-089.
+- No `GEMINI_API_KEY`, `GOOGLE_API_KEY`, gcloud installation, ADC file, or Gemini `.env`
+  was present. The shell profile still owns a historical Cloud Project export and was
+  deliberately not edited because other Google Cloud workflows may depend on it.
+- The CLI user setting was changed to `gemini-api-key`, preventing future calls from
+  silently retrying the dead OAuth route. A new AI Studio Auth key is still required.
+- As of September 2026, new AI Studio keys are service-account-bound Auth keys; old
+  unrestricted Standard keys are rejected and Standard-key support is being removed.
+  The key must never be committed to this repository or passed in a visible command-line
+  argument.
+- A local `gemini-authkey` launcher was installed in `~/.local/bin` with mode 0700 and
+  added to the Bash login PATH. It stores a user-entered key in macOS Keychain, retrieves
+  it only into the child process environment, and locally unsets Code Assist/Vertex
+  variables before starting Gemini CLI. Its shell syntax and help path passed; no key
+  has been created or stored yet.

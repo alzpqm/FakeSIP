@@ -105,3 +105,11 @@ tests, artifact inspection, and live OpenWrt evidence.
 The final release was published from the anonymous `Codex <codex@local.invalid>` commit
 and annotated tag. A post-publication asset listing confirmed exactly two APKs and one
 checksum manifest. Historical release pages were not edited or deleted.
+
+## 2026-09-09 Gemini Credential Boundary
+
+No Gemini API key, Google Cloud API key, service-account file, ADC token, or plaintext
+credential was found, created, printed, or committed. The replacement launcher stores a
+future user-entered Auth key in macOS Keychain and passes it only through the Gemini child
+process environment; its source contains no credential. The existing shell Cloud Project
+setting was left intact for other tools and is suppressed only inside the launcher.
