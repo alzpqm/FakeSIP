@@ -697,3 +697,7 @@ The 45-minute window is not complete at this snapshot.
   then explicitly supplied and authorized a key for agent use; it was stored only in
   Keychain. A corrected raw API request accepted the key but returned
   `RESOURCE_EXHAUSTED` because the associated project's prepaid credits were depleted.
+- The Keychain launcher is Mac-local and is not available in Google Cloud Shell. Cloud
+  Shell must use its native `gemini` command after setting `GEMINI_API_KEY` for that
+  session and selecting Gemini API Key with `/auth`. The attempted Mac launcher command
+  made no request and is recorded as F-099.

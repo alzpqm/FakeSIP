@@ -1474,3 +1474,14 @@ OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved 
   regenerated, no commit was made, and no system or credential state changed.
 - Correction: replace both fragments with the verified F-096 impact and correction, then
   record this error before regenerating and comparing the handoff Base64 files.
+
+## F-099: Mac-Only Keychain Launcher Was Invoked in Cloud Shell
+
+- Date observed: 2026-09-09
+- Scope: run the Gemini API-key smoke prompt from Google Cloud Shell
+- Result: Cloud Shell reported `gemini-authkey: command not found` because the launcher
+  exists only in the Mac user's `~/.local/bin`; home directories are not synchronized.
+- Impact: no API request, credential, repository, billing, or router state changed.
+- Correction: in Cloud Shell, enter the key with hidden `read -s`, export
+  `GEMINI_API_KEY`, select Gemini API Key once through `/auth`, and then use the native
+  `gemini` command. Do not escape underscores inside the quoted prompt.
