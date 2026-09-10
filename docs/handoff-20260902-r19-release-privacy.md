@@ -119,3 +119,9 @@ On 2026-09-10 the CLI auth selection was restored from the API-key path to Googl
 The Keychain item was not deleted or exposed, but no further Gemini request was made.
 F-102 records the retracted claim that the API key's 429 required the paid Workspace user
 to purchase credit; the response did not establish Workspace OAuth entitlement.
+
+The subsequent OAuth test exposed no identity or token in the handoffs. Diagnostics
+classified the cached account only as a custom-domain Workspace account and recorded the
+HTTP status/license message; the account name, domain, OAuth token, and supplied API key
+remain absent. F-103 records the failed license check and F-104 corrects the unsupported
+two-account claim.

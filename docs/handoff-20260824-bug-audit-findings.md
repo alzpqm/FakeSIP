@@ -310,11 +310,10 @@ unsupported and were not modified during final publication.
 
 ## 2026-09-09 Gemini Authentication Finding (Corrected 2026-09-10)
 
-Gemini CLI 0.59.0 returned `UNSUPPORTED_CLIENT` for one cached account classified as the
-retired individual Code Assist tier. Two accounts exist in the local Gemini account
-cache, so this result does not establish that the intended Google Workspace Business
-Standard account is ineligible. The API-key path is an alternative product path, not a
-proven replacement for Workspace OAuth.
+Gemini CLI 0.59.0 returned `UNSUPPORTED_CLIENT` in an earlier OAuth attempt. The later
+claim that two accounts existed in the local account cache was false: direct inspection
+found one active custom-domain Workspace account and an empty old-account list. The
+API-key path remains an alternative product path, not a replacement for Workspace OAuth.
 
 This is distinct from Vertex AI, which requires a Cloud project, location, enabled API,
 and ADC, service-account credentials, or a Google Cloud API key. None of those Vertex
@@ -329,3 +328,11 @@ paid Workspace plan is invalid or that adding API credit is required to restore 
 The next valid test is explicit Google OAuth with the intended Workspace account and
 `GOOGLE_CLOUD_PROJECT=rock-strength-463610-g1`, followed by a check of any separately
 assigned Gemini Code Assist license. No further paid request should be made first.
+
+That OAuth test was performed once on 2026-09-10 with API-key variables explicitly
+unset. The request reached Code Assist onboarding using the active Workspace account and
+correct project, then failed before inference with HTTP 403 `#3501`: no valid product
+license. Gemini CLI therefore is not currently usable through this OAuth account. The
+remaining check belongs in Google Cloud administration: Code Assist license assignment,
+Gemini for Google Cloud API enablement, and required project IAM. This finding does not
+revive the withdrawn API-credit recommendation.

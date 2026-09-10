@@ -164,3 +164,7 @@ assets, or router configuration. The published r21 asset set and hashes remain u
 On 2026-09-10 the host auth selection was corrected back to `oauth-personal`. No release
 artifact changed, no Gemini request was made during the correction, and the API-key 429
 must not be interpreted as a requirement for the Workspace user to purchase API credit.
+
+A later authorized OAuth smoke test returned Code Assist HTTP 403 `#3501` before model
+inference. This host-side authentication result and the F-104 account-cache correction do
+not change any FakeSIP source, APK, checksum, tag, release asset, or router installation.

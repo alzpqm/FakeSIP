@@ -1526,7 +1526,7 @@ not establish that usable API billing credit is the sole blocker or required sol
 - Scope: diagnose Gemini CLI recovery for a paid Google Workspace Business Standard user
 - Result: the assistant generalized a Developer API key's authenticated 429 prepaid-credit
   response into the unsupported claim that additional API credit was the required recovery.
-  It also failed to account for two cached Google accounts before declaring OAuth unusable.
+  It also failed to verify which account was cached before declaring OAuth unusable.
 - Impact: the user lost substantial Codex usage and was incorrectly directed toward a
   billing action. No credit purchase, billing change, credential disclosure, repository
   change, router change, or successful paid Gemini request occurred.
@@ -1534,3 +1534,32 @@ not establish that usable API billing credit is the sole blocker or required sol
   `oauth-personal`, make no further Gemini requests, and next explicitly choose the paid
   Workspace account with `GOOGLE_CLOUD_PROJECT=rock-strength-463610-g1`. Treat Workspace
   Gemini features, Code Assist licensing, and Developer API billing as separate products.
+
+## F-103: Workspace OAuth Reached Code Assist but Had No Valid License
+
+- Date observed: 2026-09-10
+- Scope: one user-authorized minimal Gemini CLI OAuth test after withdrawing the API-key
+  billing diagnosis
+- Result: with `GEMINI_API_KEY` and `GOOGLE_API_KEY` unset and
+  `GOOGLE_CLOUD_PROJECT=rock-strength-463610-g1`, Gemini CLI 0.59.0 reached the Code Assist
+  onboarding service and returned HTTP 403 `#3501`, stating that the active Workspace
+  account did not have a valid product license.
+- Impact: no model output was generated, no automatic retry was allowed, and no API key,
+  prepaid credit, billing setting, repository, router, or GitHub state changed.
+- Correction: do not send another inference request. An administrator must first inspect
+  the Gemini Code Assist license assignment, Gemini for Google Cloud API enablement, and
+  required IAM roles for the project. Keep this separate from Workspace application
+  features and Developer API billing.
+
+## F-104: Stale Summary Was Mistaken for Two Cached Accounts
+
+- Date observed: 2026-09-10
+- Scope: explain why the earlier OAuth result might have used the wrong account
+- Result: the assistant repeated a compacted handoff claim that two Google accounts were
+  cached without checking the file. Direct inspection of `google_accounts.json` found one
+  active custom-domain Workspace account and an empty old-account list.
+- Impact: the user received another unsupported explanation. No credential content was
+  printed, no account was changed, and no external request resulted from the cache check.
+- Correction: replace every two-account claim in the tracked handoffs with the observed
+  cache shape. Future authentication conclusions must come from current local state and
+  the service response, not an unverified compacted summary.

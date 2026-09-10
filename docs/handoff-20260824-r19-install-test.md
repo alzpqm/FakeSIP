@@ -223,12 +223,18 @@ so the tested router installation and public artifacts are byte-identical.
 ## 2026-09-09 Local Gemini CLI Setup (Corrected 2026-09-10)
 
 The host Gemini CLI was upgraded from 0.53.0 to stable 0.59.0. A clean OAuth prompt test
-failed at authentication with `UNSUPPORTED_CLIENT` and made no model request. That test
-used one of two cached accounts and did not prove the intended Workspace account was
-ineligible. The global selected auth type was restored to `oauth-personal`; no automatic
-OAuth test was run afterward. The `gemini-authkey` Keychain launcher passed
+failed at authentication with `UNSUPPORTED_CLIENT` and made no model request. The global
+selected auth type was restored to `oauth-personal`. A direct cache inspection later
+showed one active custom-domain Workspace account and no old accounts, correcting the
+unverified two-account claim. The `gemini-authkey` Keychain launcher passed
 `sh -n`, resolves from a fresh Bash login shell, and reports the expected help text. The
 subsequently authorized key was stored in Keychain and accepted by the API endpoint, but
 the request returned `RESOURCE_EXHAUSTED` because that Developer API project reported
 depleted prepaid credits. This does not establish the Workspace OAuth or Code Assist
 license state and is not a reason by itself to purchase credit.
+
+One OAuth smoke test was then run with API-key variables unset and the expected Cloud
+project. It exited 1 before inference with Code Assist HTTP 403 `#3501` because the active
+Workspace account had no valid product license. No retry was run. CLI installation and
+OAuth token transport functioned far enough to reach onboarding, but Gemini inference is
+not operational until an administrator resolves the Code Assist license/API/IAM setup.

@@ -718,6 +718,14 @@ The 45-minute window is not complete at this snapshot.
   applies at the API project's billing/prepay layer.
 - F-102 retracts the broader billing conclusion: Google Workspace Business Standard is a
   paid Workspace plan, while Workspace Gemini features, Gemini CLI/Code Assist licensing,
-  and Gemini Developer API billing are distinct product surfaces. The local account cache
-  contains two accounts, so the earlier `UNSUPPORTED_CLIENT` result cannot be generalized
-  to the intended Workspace account until that account is explicitly selected.
+  and Gemini Developer API billing are distinct product surfaces. A later direct cache
+  inspection found one active custom-domain Workspace account and an empty old-account
+  list; the earlier claim that two accounts were cached was unverified and false (F-104).
+- On 2026-09-10 one user-authorized OAuth smoke test explicitly unset both API-key
+  variables and set `GOOGLE_CLOUD_PROJECT=rock-strength-463610-g1`. Gemini CLI 0.59.0
+  reached Code Assist onboarding with the active Workspace account, then returned HTTP
+  403 `#3501` stating that the account had no valid product license. No model response was
+  generated and there was no retry. This is a Code Assist license/assignment result, not
+  the earlier Developer API prepaid-credit result. Current Google documentation requires
+  an organization user to have the appropriate Code Assist license, Gemini for Google
+  Cloud API setup, and project IAM; an administrator must verify those items.
