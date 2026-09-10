@@ -1505,3 +1505,16 @@ The F-099 correction was applied successfully: Cloud Shell no longer returned 40
 depleted-prepayment response seen on the Mac. The user cancelled the retry loop after the
 diagnosis was established. No new authentication defect was found; usable API billing
 credit remains the sole blocker.
+
+## F-101: Retired Free-Tier Model Probe Returned 404
+
+- Date observed: 2026-09-10
+- Scope: determine whether an explicitly Free-tier model could bypass the depleted-credit
+  response
+- Result: a single direct request to `gemini-2.5-flash-lite` returned 404 because that
+  model is no longer available to new users; the API recommended `gemini-3.5-flash-lite`.
+- Impact: no model output, credential disclosure, billing change, repository change, or
+  router change occurred.
+- Correction: one direct request to the server-recommended model returned the same 429
+  depleted-prepayment response, confirming a project-level billing block rather than a
+  model-selection problem. Do not issue further probes before credit is restored.

@@ -712,3 +712,7 @@ The 45-minute window is not complete at this snapshot.
   429 depleted-prepayment response. The final `Operation cancelled` only stopped the CLI
   retry loop. Cloud Shell auth is therefore repaired; API project credit is the remaining
   requirement.
+- A one-shot model fallback check found `gemini-2.5-flash-lite` retired for new users
+  (F-101). The API-recommended `gemini-3.5-flash-lite` then returned the same authenticated
+  429 depleted-prepayment result. This rules out model availability and proves the block
+  applies at the API project's billing/prepay layer.
