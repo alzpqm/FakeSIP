@@ -1497,3 +1497,11 @@ OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved 
 - Correction: do not repeat inference tests until the API project has usable prepaid
   credit; reset Cloud Shell to `gemini-api-key` separately to eliminate its stale OAuth
   401 path.
+
+## 2026-09-10 Cloud Shell Authentication Recovery Evidence
+
+The F-099 correction was applied successfully: Cloud Shell no longer returned 401 or
+`ACCESS_TOKEN_TYPE_UNSUPPORTED`. It repeatedly reached the same authenticated 429
+depleted-prepayment response seen on the Mac. The user cancelled the retry loop after the
+diagnosis was established. No new authentication defect was found; usable API billing
+credit remains the sole blocker.

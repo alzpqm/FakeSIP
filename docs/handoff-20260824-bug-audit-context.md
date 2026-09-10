@@ -707,3 +707,8 @@ The 45-minute window is not complete at this snapshot.
   rules out an Auth-key compatibility problem. Cloud Shell must explicitly set
   `security.auth.selectedType` to `gemini-api-key`; billing credit remains the independent
   second blocker.
+- On 2026-09-10 the user applied that Cloud Shell setting and supplied the key through a
+  hidden session variable. The 401 disappeared and every attempt reached the authenticated
+  429 depleted-prepayment response. The final `Operation cancelled` only stopped the CLI
+  retry loop. Cloud Shell auth is therefore repaired; API project credit is the remaining
+  requirement.
