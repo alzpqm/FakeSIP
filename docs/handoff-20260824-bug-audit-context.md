@@ -684,8 +684,9 @@ The 45-minute window is not complete at this snapshot.
 - No `GEMINI_API_KEY`, `GOOGLE_API_KEY`, gcloud installation, ADC file, or Gemini `.env`
   was present. The shell profile still owns a historical Cloud Project export and was
   deliberately not edited because other Google Cloud workflows may depend on it.
-- The CLI user setting was changed to `gemini-api-key`, preventing future calls from
-  silently retrying the dead OAuth route. A new AI Studio Auth key is still required.
+- The CLI user setting was temporarily changed to `gemini-api-key`. This was later
+  reverted to `oauth-personal`: the API-key 429 only describes that Developer API
+  project's billing state and does not establish the Workspace account's CLI entitlement.
 - As of September 2026, new AI Studio keys are service-account-bound Auth keys; old
   unrestricted Standard keys are rejected and Standard-key support is being removed.
   The key must never be committed to this repository or passed in a visible command-line
@@ -701,18 +702,22 @@ The 45-minute window is not complete at this snapshot.
   Shell must use its native `gemini` command after setting `GEMINI_API_KEY` for that
   session and selecting Gemini API Key with `/auth`. The attempted Mac launcher command
   made no request and is recorded as F-099.
-- Cloud Shell subsequently returned 401 `ACCESS_TOKEN_TYPE_UNSUPPORTED`, showing it still
-  routed through an OAuth/token configuration instead of API-key authentication. The Mac
-  CLI accepted the same key and reached only the known 429 prepaid-credit barrier, which
-  rules out an Auth-key compatibility problem. Cloud Shell must explicitly set
-  `security.auth.selectedType` to `gemini-api-key`; billing credit remains the independent
-  second blocker.
-- On 2026-09-10 the user applied that Cloud Shell setting and supplied the key through a
-  hidden session variable. The 401 disappeared and every attempt reached the authenticated
-  429 depleted-prepayment response. The final `Operation cancelled` only stopped the CLI
-  retry loop. Cloud Shell auth is therefore repaired; API project credit is the remaining
-  requirement.
+- Cloud Shell subsequently returned 401 `ACCESS_TOKEN_TYPE_UNSUPPORTED` on one auth path.
+  The Mac CLI accepted the supplied key and reached a 429 prepaid-credit response. These
+  results establish only the API-key path's behavior; they do not diagnose or replace the
+  correct Google Workspace OAuth account and any separately assigned Code Assist license.
+- On 2026-09-10 the user applied the API-key setting and supplied the key through a hidden
+  session variable. The 401 disappeared and attempts reached an authenticated 429. That
+  proves the key path was selected, not that API credit is the sole way to restore Gemini
+  CLI. Further work must select the intended Workspace account via Google OAuth with
+  `GOOGLE_CLOUD_PROJECT=rock-strength-463610-g1`, then verify its actual Code Assist
+  entitlement without inferring it from the Workspace subscription name alone.
 - A one-shot model fallback check found `gemini-2.5-flash-lite` retired for new users
   (F-101). The API-recommended `gemini-3.5-flash-lite` then returned the same authenticated
   429 depleted-prepayment result. This rules out model availability and proves the block
   applies at the API project's billing/prepay layer.
+- F-102 retracts the broader billing conclusion: Google Workspace Business Standard is a
+  paid Workspace plan, while Workspace Gemini features, Gemini CLI/Code Assist licensing,
+  and Gemini Developer API billing are distinct product surfaces. The local account cache
+  contains two accounts, so the earlier `UNSUPPORTED_CLIENT` result cannot be generalized
+  to the intended Workspace account until that account is explicitly selected.

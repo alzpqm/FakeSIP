@@ -160,3 +160,7 @@ release pages and locally retained historical IPKs were not changed.
 The Gemini CLI upgrade, global auth selection, and local Keychain launcher are host-side
 developer tooling only. They are not tracked FakeSIP source, APK content, GitHub release
 assets, or router configuration. The published r21 asset set and hashes remain unchanged.
+
+On 2026-09-10 the host auth selection was corrected back to `oauth-personal`. No release
+artifact changed, no Gemini request was made during the correction, and the API-key 429
+must not be interpreted as a requirement for the Workspace user to purchase API credit.

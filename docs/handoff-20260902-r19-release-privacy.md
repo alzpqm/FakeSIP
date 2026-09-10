@@ -114,3 +114,8 @@ use. It was stored in macOS Keychain and passed only through the Gemini child pr
 environment; its value was not printed, copied into these handoffs, committed, or added
 to the launcher source. The existing shell Cloud Project setting was left intact for
 other tools and is suppressed only inside the launcher.
+
+On 2026-09-10 the CLI auth selection was restored from the API-key path to Google OAuth.
+The Keychain item was not deleted or exposed, but no further Gemini request was made.
+F-102 records the retracted claim that the API key's 429 required the paid Workspace user
+to purchase credit; the response did not establish Workspace OAuth entitlement.

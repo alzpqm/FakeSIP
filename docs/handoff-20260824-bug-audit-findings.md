@@ -308,12 +308,13 @@ The published GitHub artifacts were downloaded afresh and matched the release ch
 manifest. This verdict applies to r21 on the tested OpenWrt 25 target; older releases are
 unsupported and were not modified during final publication.
 
-## 2026-09-09 Gemini Authentication Finding
+## 2026-09-09 Gemini Authentication Finding (Corrected 2026-09-10)
 
-Gemini CLI's cached personal OAuth path is no longer usable for this account: version
-0.59.0 returned `UNSUPPORTED_CLIENT` for the retired individual Code Assist tier even
-with the old Cloud Project variables removed. The supported replacement for direct CLI
-use is a newly generated Google AI Studio Auth key supplied as `GEMINI_API_KEY`.
+Gemini CLI 0.59.0 returned `UNSUPPORTED_CLIENT` for one cached account classified as the
+retired individual Code Assist tier. Two accounts exist in the local Gemini account
+cache, so this result does not establish that the intended Google Workspace Business
+Standard account is ineligible. The API-key path is an alternative product path, not a
+proven replacement for Workspace OAuth.
 
 This is distinct from Vertex AI, which requires a Cloud project, location, enabled API,
 and ADC, service-account credentials, or a Google Cloud API key. None of those Vertex
@@ -321,8 +322,10 @@ credentials or tools is installed locally. The separate `gemini-api` project exi
 is explicitly experimental and not a supported Google product, so it was not installed
 as a replacement for the stable coding CLI.
 
-The user-authorized Auth key was accepted by the corrected Gemini API endpoint, proving
-that its format and authentication path work. The request failed only after authentication
-with `RESOURCE_EXHAUSTED: prepayment credits are depleted`. Google Workspace Business
-Standard does not supply Developer API credit; the key's Cloud project must separately
-enable Gemini API billing/prepay, or remain subject to a Free-tier project's limits.
+The user-authorized key was accepted by the Gemini Developer API endpoint and that path
+returned `RESOURCE_EXHAUSTED: prepayment credits are depleted`. This says only that the
+key's Developer API project has a billing/prepay restriction. It does not prove that the
+paid Workspace plan is invalid or that adding API credit is required to restore the CLI.
+The next valid test is explicit Google OAuth with the intended Workspace account and
+`GOOGLE_CLOUD_PROJECT=rock-strength-463610-g1`, followed by a check of any separately
+assigned Gemini Code Assist license. No further paid request should be made first.

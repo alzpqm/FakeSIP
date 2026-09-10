@@ -1377,9 +1377,10 @@ OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved 
   cached account was classified as the retired Gemini Code Assist individual free tier.
 - Impact: no model inference or tool call ran, no credential was printed or changed, and
   no FakeSIP/router/GitHub state changed. The npm upgrade itself succeeded.
-- Correction: do not retry personal Code Assist OAuth. Use a new Google AI Studio Gemini
-  Auth key through `GEMINI_API_KEY`, or provision Vertex AI with gcloud ADC and the
-  required API/IAM/billing configuration. This Mac currently has neither gcloud nor ADC.
+- Correction: do not generalize this result to the intended Workspace account. Explicitly
+  select the correct Workspace account with Google OAuth and the configured Cloud project,
+  then verify its actual Code Assist entitlement. API key and Vertex AI remain separate
+  alternatives, not mandatory replacements.
 
 ## F-090: Gemini Handoff Addendum Used a Stale Context Anchor
 
@@ -1440,9 +1441,9 @@ OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved 
   project's prepaid Gemini API credits were depleted.
 - Impact: no model response was generated and no project, billing, repository, or router
   setting changed. The credential value was not printed or written to the repository.
-- Correction: add prepaid Gemini API credit or link the key's project to an eligible paid
-  billing setup; alternatively use a key from a separate Free-tier project within its
-  free model and quota limits.
+- Correction: treat this only as an API-key project billing result. Do not recommend a
+  purchase until the intended Workspace OAuth account and any Code Assist license have
+  been checked separately.
 
 ## F-096: Current Tool Shell Did Not Reload the New Local-Bin PATH
 
@@ -1494,17 +1495,16 @@ OpenWrt package smoke test passed. F-086 and F-087 therefore have no unresolved 
   expected 429 depleted-prepayment response; its automatic retry loop was interrupted.
 - Impact: no model output was produced and no configuration, billing, repository, or
   router state changed. The test proved the key and Gemini CLI are compatible.
-- Correction: do not repeat inference tests until the API project has usable prepaid
-  credit; reset Cloud Shell to `gemini-api-key` separately to eliminate its stale OAuth
-  401 path.
+- Correction: stop API-key inference tests. Restore the CLI to Google OAuth and explicitly
+  choose the intended Workspace account before drawing any entitlement conclusion.
 
 ## 2026-09-10 Cloud Shell Authentication Recovery Evidence
 
 The F-099 correction was applied successfully: Cloud Shell no longer returned 401 or
 `ACCESS_TOKEN_TYPE_UNSUPPORTED`. It repeatedly reached the same authenticated 429
 depleted-prepayment response seen on the Mac. The user cancelled the retry loop after the
-diagnosis was established. No new authentication defect was found; usable API billing
-credit remains the sole blocker.
+diagnosis was established. This confirms only the API-key path's 429 response; it does
+not establish that usable API billing credit is the sole blocker or required solution.
 
 ## F-101: Retired Free-Tier Model Probe Returned 404
 
@@ -1517,4 +1517,20 @@ credit remains the sole blocker.
   router change occurred.
 - Correction: one direct request to the server-recommended model returned the same 429
   depleted-prepayment response, confirming a project-level billing block rather than a
-  model-selection problem. Do not issue further probes before credit is restored.
+  model-selection problem on that API-key path. Do not issue further API-key probes while
+  the Workspace OAuth account and Code Assist entitlement remain unverified.
+
+## F-102: Workspace Entitlement Was Conflated With Developer API Billing
+
+- Date observed: 2026-09-10
+- Scope: diagnose Gemini CLI recovery for a paid Google Workspace Business Standard user
+- Result: the assistant generalized a Developer API key's authenticated 429 prepaid-credit
+  response into the unsupported claim that additional API credit was the required recovery.
+  It also failed to account for two cached Google accounts before declaring OAuth unusable.
+- Impact: the user lost substantial Codex usage and was incorrectly directed toward a
+  billing action. No credit purchase, billing change, credential disclosure, repository
+  change, router change, or successful paid Gemini request occurred.
+- Correction: retract the billing conclusion, restore local Gemini CLI selection to
+  `oauth-personal`, make no further Gemini requests, and next explicitly choose the paid
+  Workspace account with `GOOGLE_CLOUD_PROJECT=rock-strength-463610-g1`. Treat Workspace
+  Gemini features, Code Assist licensing, and Developer API billing as separate products.
