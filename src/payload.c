@@ -30,7 +30,7 @@
 #include "logging.h"
 #include "globvar.h"
 
-#define BUFFLEN 1200
+#define BUFFLEN        1200
 #define SIP_URI_MAXLEN 120
 #define SET_BE16(a, u16)         \
     do {                         \
@@ -72,11 +72,10 @@ static const char *ims_sdp_fmt =
     "a=maxptime:240\r\n"
     "a=sendrecv\r\n";
 
-static const char *ims_headers =
-    "Supported: 199, timer\r\n"
-    "Session-Expires: 1800\r\n"
-    "User-Agent: PRD-IR92/18 term-Generic/IMS-UE "
-    "device-type/smart-phone mno-custom/none\r\n";
+static const char *ims_headers = "Supported: 199, timer\r\n"
+                                 "Session-Expires: 1800\r\n"
+                                 "User-Agent: PRD-IR92/18 term-Generic/IMS-UE "
+                                 "device-type/smart-phone mno-custom/none\r\n";
 
 static const char *sip_fmt = "INVITE %s SIP/2.0\r\n"
                              "Via: SIP/2.0/UDP %s;branch=z9hG4bK%lx\r\n"
@@ -187,13 +186,14 @@ static int make_sip_invite(uint8_t *buffer, size_t *len, char *sip_uri)
         if (strncmp("sip:", sip_uri, 4) != 0 || sip_uri[4] == '\0' ||
             strpbrk(sip_uri, " \t\r\n\f\v") != NULL ||
             strlen(sip_uri) > SIP_URI_MAXLEN) {
-            E("ERROR: Invalid SIP URI (use sip:, no whitespace, max %d bytes): %s",
+            E("ERROR: Invalid SIP URI (use sip:, no whitespace, max %d "
+              "bytes): %s",
               SIP_URI_MAXLEN, sip_uri);
             return -1;
         }
     } else {
-        len_ = snprintf(sip_uri_random, sizeof(sip_uri_random),
-                        "sip:user@%s", local);
+        len_ = snprintf(sip_uri_random, sizeof(sip_uri_random), "sip:user@%s",
+                        local);
         if (len_ < 0 || (size_t) len_ >= sizeof(sip_uri_random)) {
             E("ERROR: snprintf(): %s", "failure");
             return -1;
@@ -256,8 +256,7 @@ static int make_custom(uint8_t *buffer, size_t *len, char *filepath)
     len_ = fread(buffer, 1, buffsize, fp);
 
     if (ferror(fp)) {
-        E("ERROR: fread(): %s: %s", filepath,
-          strerror(errno ? errno : EIO));
+        E("ERROR: fread(): %s: %s", filepath, strerror(errno ? errno : EIO));
         fclose(fp);
         return -1;
     }

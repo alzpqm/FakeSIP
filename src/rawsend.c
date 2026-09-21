@@ -439,9 +439,8 @@ int fs_rawsend_handle(struct sockaddr_ll *sll, uint8_t *pkt_data, int pkt_len,
         */
         sll->sll_pkttype = 0;
 
-        srcinfo_unavail = fs_srcinfo_get(daddr,
-                                         (unsigned int) sll->sll_ifindex,
-                                         &src_ttl, sll->sll_addr);
+        srcinfo_unavail = fs_srcinfo_get(
+            daddr, (unsigned int) sll->sll_ifindex, &src_ttl, sll->sll_addr);
         if (srcinfo_unavail) {
             src_ttl = 0;
             memset(&sll->sll_addr, 0, sizeof(sll->sll_addr));

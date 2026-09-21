@@ -48,7 +48,7 @@ static struct nfq_q_handle *qh = NULL;
 
 #define NFQ_MAX_PACKET_ERRORS 20U
 #define NFQ_BACKOFF_MAX_MS    1000U
-#define NFQ_POLL_TIMEOUT_MS    250
+#define NFQ_POLL_TIMEOUT_MS   250
 
 static int set_nonblocking(int socket_fd)
 {
@@ -82,7 +82,8 @@ static void error_backoff(unsigned int error_count)
 
     delay.tv_sec = delay_ms / 1000U;
     delay.tv_nsec = (long) (delay_ms % 1000U) * 1000000L;
-    while (nanosleep(&delay, &remaining) < 0 && errno == EINTR && !g_ctx.exit) {
+    while (nanosleep(&delay, &remaining) < 0 && errno == EINTR &&
+           !g_ctx.exit) {
         delay = remaining;
     }
 }

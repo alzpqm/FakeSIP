@@ -140,6 +140,11 @@ int fs_pkt4_make(uint8_t *buffer, size_t buffer_size, struct sockaddr *saddr,
 
     nfq_ip_set_checksum(iph);
     nfq_udp_compute_checksum_ipv4(udph, iph);
+    /* RFC 768: a computed zero is transmitted as all ones, not "no checksum".
+     */
+    if (!udph->check) {
+        udph->check = htons(UINT16_MAX);
+    }
 
     return pkt_len;
 }

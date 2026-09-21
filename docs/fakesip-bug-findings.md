@@ -351,8 +351,8 @@ for active use.
 Router-side backup:
 
 ```text
-/root/fakesip-backup-20260704-212905
-/root/fakesip-backup-20260704-212905.tgz
+/private/fakesip-backup-20260704-212905
+/private/fakesip-backup-20260704-212905.tgz
 ```
 
 Mac-side backup:
@@ -402,7 +402,7 @@ LOCAL_SKIP_COUNT=0
 Rollback command on the router:
 
 ```sh
-/root/fakesip-backup-20260704-212905/rollback.sh
+/private/fakesip-backup-20260704-212905/rollback.sh
 ```
 
 ### OpenWrt UDP/443 Bypass Test And Global Mode Revert
@@ -645,7 +645,7 @@ rotation profile.
 The pre-upgrade router rollback archive is retained on the router as:
 
 ```text
-/root/fakesip-backup-20260726-152708-pre-r14.tgz
+/private/fakesip-backup-20260726-152708-pre-r14.tgz
 sha256: 8dfd6e03b02ac6087374a3fb714e4d0628b0a8de2b548f073494d369dfd0d99a
 ```
 
@@ -704,7 +704,7 @@ complete transfers and zero queue drops show no r15 download failure.
 The pre-install router backup is retained at:
 
 ```text
-/root/fakesip-backup-r15-preinstall-20260729-0238/
+/private/fakesip-backup-r15-preinstall-20260729-0238/
 files-r14.tgz sha256: 312bd2f48a1e0b2f0d839c90992b917306053a308803c3c09d49f9858329538e
 ```
 
@@ -764,14 +764,14 @@ resolved PPPoE devices, and no controls overflowed or overlapped.
 The pre-upgrade rollback archive is retained on the router and locally:
 
 ```text
-/root/fakesip-backup-r16-pre-20260729-070206.tgz
+/private/fakesip-backup-r16-pre-20260729-070206.tgz
 sha256: 3790841fc73f93ed13d0482f585386d0596404b068cf84fa40b0de53a6df6f15
 ```
 
 The post-migration formal-state archive is likewise retained in both places:
 
 ```text
-/root/fakesip-r16-formal-20260729-072254.tgz
+/private/fakesip-r16-formal-20260729-072254.tgz
 sha256: 70284e6e3764cb3605ea31b14f122ae99e5047802c7908adf1a1f92c2d9fe08b
 ```
 
@@ -811,7 +811,7 @@ post-upgrade mainland IPv6 DNS and HTTP/3 check succeeded.
 luci-app-fakesip-1.0.0-r11.apk
 sha256: ebff3087f7a180bc602d0e80a632105e43b0848f877aca1f8478bc823baca80e
 
-/root/fakesip-luci-r11-pre-20260729-1846.tgz
+/private/fakesip-luci-r11-pre-20260729-1846.tgz
 sha256: c1ad5900b4ac320ff1dfd47576d1f2a812e3842c0949dc617cd74b7b2b565b9f
 
 <local-backup-dir>/fakesip-luci-r11-20260729-1845/

@@ -38,6 +38,11 @@ build_test test_nfrules \
     "$ROOT_DIR/src/logging.c"
 
 if [ "$(uname -s)" = Linux ]; then
+    build_test test_packets \
+        "$ROOT_DIR/src/ipv4pkt.c" "$ROOT_DIR/src/ipv6pkt.c" \
+        "$ROOT_DIR/src/globvar.c" "$ROOT_DIR/src/logging.c" \
+        -lnetfilter_queue -lnfnetlink -lmnl
+
     "$CC" $CFLAGS -ffunction-sections -fdata-sections \
         -I"$ROOT_DIR/include" "$ROOT_DIR/tests/test_rawsend.c" \
         "$ROOT_DIR/src/globvar.c" "$ROOT_DIR/src/logging.c" \

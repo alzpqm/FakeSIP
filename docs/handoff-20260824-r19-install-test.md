@@ -40,7 +40,7 @@ used `arch: all`, which this router does not accept. The rejected hashes were co
 
 Rollback preparation is complete:
 
-- Router archive: `/root/fakesip-backup-20260824-r19-candidate-preinstall.tgz`
+- Router archive: `/private/fakesip-backup-20260824-r19-candidate-preinstall.tgz`
 - Router/Mac archive SHA-256:
   `f0987a3c033dddf63fc89da5b6f1b1a1ca1c9dd3647ed68933921f940f491bc0`
 - Mac archive:
@@ -96,7 +96,7 @@ Rollback preparation is complete:
 - Snapshot archive containing the current handoffs, Base64 copies, corrected/rejected APK
   artifacts, rollback archive, and both monitor logs:
   - Mac: `<local-artifact-dir>/audit-20260824-r19-candidate/verification/fakesip-r19-install-test-20260824.tgz`
-  - Debian: `/root/fakesip-audit-20260824-r19-install-test-20260824.tgz`
+  - Debian: `/private/fakesip-audit-20260824-r19-install-test-20260824.tgz`
 
 ## Install Result
 

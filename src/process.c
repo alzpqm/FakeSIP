@@ -50,6 +50,21 @@ int fs_execute_command(char **argv, int silent, const char *input)
             E("ERROR: pipe(): %s", strerror(errno));
             return -1;
         }
+        /* Keep pipe ends away from stdin/stdout/stderr, including when the
+           caller starts with closed standard descriptors. */
+        for (i = 0; i < 2; i++) {
+            if (pipefd[i] <= STDERR_FILENO) {
+                fd = fcntl(pipefd[i], F_DUPFD, STDERR_FILENO + 1);
+                if (fd < 0) {
+                    E("ERROR: fcntl(): F_DUPFD: %s", strerror(errno));
+                    close(pipefd[0]);
+                    close(pipefd[1]);
+                    return -1;
+                }
+                close(pipefd[i]);
+                pipefd[i] = fd;
+            }
+        }
     }
 
     pid = fork();
@@ -112,7 +127,7 @@ int fs_execute_command(char **argv, int silent, const char *input)
 
         E("ERROR: execvp(): %s: %s", argv[0], strerror(errno));
 
-child_exit:
+    child_exit:
         if (fd >= 0 && fd != STDOUT_FILENO && fd != STDERR_FILENO) {
             close(fd);
         }

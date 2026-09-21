@@ -18,7 +18,7 @@ Target:
 
 Before installation, the router backup directory was created at:
 
-/root/fakesip-backup-20260814-r18
+/private/fakesip-backup-20260814-r18
 
 The same archive was copied through Debian to the local artifact directory:
 

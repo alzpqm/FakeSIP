@@ -101,8 +101,7 @@ void fs_srcinfo_cleanup(void)
 
 
 int fs_srcinfo_put(const struct sockaddr *addr, unsigned int ifindex,
-                   uint8_t ttl,
-                   const uint8_t hwaddr[8])
+                   uint8_t ttl, const uint8_t hwaddr[8])
 {
     struct srcinfo *info;
 
@@ -140,8 +139,7 @@ int fs_srcinfo_put(const struct sockaddr *addr, unsigned int ifindex,
 
 
 int fs_srcinfo_get(const struct sockaddr *addr, unsigned int ifindex,
-                   uint8_t *ttl,
-                   uint8_t hwaddr[8])
+                   uint8_t *ttl, uint8_t hwaddr[8])
 {
     size_t i, index;
     struct srcinfo *info;

@@ -158,10 +158,10 @@ ae9ccb82225e093dc415b80e3a015a3355004b0d47e4cf72e9e58d7655322713  fakesip-0.9.1-
 
 Debian paths:
 
-- `/root/fakesip-audit-20260824-ipk22-fixed`
-- `/root/fakesip-audit-20260824-apk25-fixed`
-- `/root/fakesip-audit-20260824-candidate-artifacts.tgz`
-- `/root/fakesip-audit-20260824-source-and-handoffs.tgz`
+- `/private/fakesip-audit-20260824-ipk22-fixed`
+- `/private/fakesip-audit-20260824-apk25-fixed`
+- `/private/fakesip-audit-20260824-candidate-artifacts.tgz`
+- `/private/fakesip-audit-20260824-source-and-handoffs.tgz`
 
 Mac path:
 

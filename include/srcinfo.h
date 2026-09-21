@@ -28,11 +28,9 @@ int fs_srcinfo_setup(void);
 void fs_srcinfo_cleanup(void);
 
 int fs_srcinfo_put(const struct sockaddr *addr, unsigned int ifindex,
-                   uint8_t ttl,
-                   const uint8_t hwaddr[8]);
+                   uint8_t ttl, const uint8_t hwaddr[8]);
 
 int fs_srcinfo_get(const struct sockaddr *addr, unsigned int ifindex,
-                   uint8_t *ttl,
-                   uint8_t hwaddr[8]);
+                   uint8_t *ttl, uint8_t hwaddr[8]);
 
 #endif /* FS_SRCINFO_H */

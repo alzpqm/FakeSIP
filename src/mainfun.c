@@ -104,8 +104,8 @@ static int parse_ull(const char *value, unsigned long long *result)
     int base;
     char *end;
 
-    if (!value || !result || !value[0] || value[0] == '+' ||
-        value[0] == '-' || is_ascii_space(value[0])) {
+    if (!value || !result || !value[0] || value[0] == '+' || value[0] == '-' ||
+        is_ascii_space(value[0])) {
         return -1;
     }
 
@@ -272,8 +272,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'm':
-                if (parse_ull(optarg, &tmp) < 0 || !tmp ||
-                    tmp > UINT32_MAX) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp || tmp > UINT32_MAX) {
                     fprintf(stderr, "%s: invalid value for -m.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -282,8 +281,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'n':
-                if (parse_ull(optarg, &tmp) < 0 || !tmp ||
-                    tmp > UINT16_MAX) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp || tmp > UINT16_MAX) {
                     fprintf(stderr, "%s: invalid value for -n.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;
@@ -324,8 +322,7 @@ int main(int argc, char *argv[])
                 break;
 
             case 'x':
-                if (parse_ull(optarg, &tmp) < 0 || !tmp ||
-                    tmp > UINT32_MAX) {
+                if (parse_ull(optarg, &tmp) < 0 || !tmp || tmp > UINT32_MAX) {
                     fprintf(stderr, "%s: invalid value for -x.\n", argv[0]);
                     print_usage(argv[0]);
                     goto free_mem;

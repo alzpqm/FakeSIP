@@ -80,8 +80,8 @@ void fs_logger(const char *funcname, const char *filename, unsigned long line,
     fputc('\n', logfp);
 
     if (end) {
-        fprintf(logfp, "%19s [%13s:%03lu]     at %s()\n", time_buff,
-                filename, line, funcname);
+        fprintf(logfp, "%19s [%13s:%03lu]     at %s()\n", time_buff, filename,
+                line, funcname);
     }
     fflush(logfp);
 }

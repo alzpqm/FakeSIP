@@ -62,7 +62,7 @@ files and their six base64 copies. They are evidence and must not be deleted.
   drop, and user drop all zero.
 - Last observed process metrics: VmRSS 844 kB, VmSize 1148 kB, RssAnon 100 kB,
   one thread, and seven file descriptors.
-- Router backup directory: `/root/fakesip-backup-20260818-r19-observed`
+- Router backup directory: `/private/fakesip-backup-20260818-r19-observed`
 - Router backup archive SHA-256:
   `33c036882b2885d3c473dd2aba2dd036f4e89cc938a219e22fd9fbee753f8436`
 - Local archive:
@@ -79,8 +79,8 @@ Do not read or modify FakeHTTP or queue 512 during this audit. Only FakeSIP and 
   `8ba9992ed8ff28d84a277ed69cfc6a4c018acdb7e0587adc0cb6ce6a0fe41d7b`
 - Local artifact directory:
   `<local-artifact-dir>/openwrt-0.9.1-r19-observed-20260818`
-- Debian source copy: `/root/fakesip-r19-observed-20260818`
-- Debian output directory: `/root/fakesip-r19-apk-output-20260818`
+- Debian source copy: `/private/fakesip-r19-observed-20260818`
+- Debian output directory: `/private/fakesip-r19-apk-output-20260818`
 
 ## Previously Verified r19 Tests
 
@@ -178,8 +178,8 @@ installed on the router, committed, pushed, tagged, or released.
 - Debian two-process raw-socket runtime smoke passed for outbound dual-family and
   inbound IPv4-only modes; each process used five file descriptors and exited normally.
 - OpenWrt 22.03.7 x86/64 SDK build completed successfully and produced:
-  - `/root/fakesip-audit-20260824-ipk22/fakesip_0.9.1-19_x86_64.ipk`
-  - `/root/fakesip-audit-20260824-ipk22/luci-app-fakesip_0.9.1-19_x86_64.ipk`
+  - `/private/fakesip-audit-20260824-ipk22/fakesip_0.9.1-19_x86_64.ipk`
+  - `/private/fakesip-audit-20260824-ipk22/luci-app-fakesip_0.9.1-19_x86_64.ipk`
 
 The 22.03 SDK emitted many pre-existing Kconfig type-redefinition and unrelated missing
 dependency warnings, but both requested packages were produced and the build exited
@@ -265,10 +265,10 @@ first/second/third/first regression and by the two-host observed profile order.
 ```
 
 - Debian package directories:
-  - `/root/fakesip-audit-20260824-ipk22-fixed`
-  - `/root/fakesip-audit-20260824-apk25-fixed`
+  - `/private/fakesip-audit-20260824-ipk22-fixed`
+  - `/private/fakesip-audit-20260824-apk25-fixed`
 - Debian combined archive:
-  `/root/fakesip-audit-20260824-candidate-artifacts.tgz`
+  `/private/fakesip-audit-20260824-candidate-artifacts.tgz`
 - Combined archive SHA-256:
   `3194a589a6d7fd1ae1f11e85fbfbedc7243461b94754b852ff9a8809187e442e`
 - Mac copy:
@@ -330,7 +330,7 @@ The 45-minute window is not complete at this snapshot.
 ### Install Preparation Completed
 
 - Router rollback archive:
-  `/root/fakesip-backup-20260824-r19-candidate-preinstall.tgz`
+  `/private/fakesip-backup-20260824-r19-candidate-preinstall.tgz`
 - Router and Mac rollback archive SHA-256:
   `f0987a3c033dddf63fc89da5b6f1b1a1ca1c9dd3647ed68933921f940f491bc0`
 - Mac rollback copy:
@@ -404,7 +404,7 @@ The 45-minute window is not complete at this snapshot.
 - The current handoffs, Base64 copies, APK artifacts, rollback archive, and both monitor
   logs were archived locally at
   `<local-artifact-dir>/audit-20260824-r19-candidate/verification/fakesip-r19-install-test-20260824.tgz`
-  and copied to Debian at `/root/fakesip-audit-20260824-r19-install-test-20260824.tgz`.
+  and copied to Debian at `/private/fakesip-audit-20260824-r19-install-test-20260824.tgz`.
 
 ## 2026-09-02 Release Completion Addendum
 
@@ -587,7 +587,7 @@ The 45-minute window is not complete at this snapshot.
 - A direct Gemini review attempt again failed at Code Assist onboarding with an invalid
   product license (HTTP 403), and the CLI also reported missing workspace trust (F-076).
   It changed nothing and provides no review verdict; do not retry or claim approval.
-- The first pre-r21 router snapshot reached Debian but its nested `natter-openwrt` alias
+- The first pre-r21 router snapshot reached Debian but its nested `router-alias` alias
   did not resolve (F-077). No router command ran; use the explicit authorized router
   address and port after checking jump-host SSH tooling.
 - The first r21 push used `origin`, which currently points to the read-only upstream, and

@@ -534,7 +534,7 @@ not failures.
 
 - Date observed: 2026-08-24
 - Scope: rebuild the corrected OpenWrt 25 APKs
-- Result: exit `127`; Mac bash reported `/root/fakesip-audit-20260824/tools/build-openwrt-apk.sh:
+- Result: exit `127`; Mac bash reported `/private/fakesip-audit-20260824/tools/build-openwrt-apk.sh:
   No such file or directory`.
 - Cause: the command used the Debian absolute path without wrapping the build command in
   the `<debian-ssh-alias>` SSH invocation.
@@ -1203,7 +1203,7 @@ not failures.
 - Date observed: 2026-09-06
 - Scope: read-only pre-r21 FakeSIP and queue 513 router health snapshot through Debian
 - Result: the outer Debian SSH succeeded, but its nested SSH failed immediately with
-  `Could not resolve hostname natter-openwrt`.
+  `Could not resolve hostname router-alias`.
 - Cause: the historical router alias is not currently defined or resolvable in the
   Debian jump host's SSH/DNS environment.
 - Impact: no router command ran and no router, queue, package, or configuration state

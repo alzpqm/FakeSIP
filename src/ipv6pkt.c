@@ -130,6 +130,11 @@ int fs_pkt6_make(uint8_t *buffer, size_t buffer_size, struct sockaddr *saddr,
     }
 
     nfq_udp_compute_checksum_ipv6(udph, ip6h);
+    /* A computed zero must be sent as all ones; zero is invalid for IPv6 UDP.
+     */
+    if (!udph->check) {
+        udph->check = htons(UINT16_MAX);
+    }
 
     return pkt_len;
 }
