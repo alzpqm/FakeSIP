@@ -2,7 +2,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-fakesip
 PKG_VERSION:=0.9.1
-PKG_RELEASE:=22
+PKG_RELEASE:=23
 PKGARCH:=all
 PKG_BUILD_DEPENDS:=luci-base/host
 

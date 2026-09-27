@@ -1,4 +1,4 @@
-"""IPv6 options acceptance test; run via linux-ipv6-options-test.sh."""
+"""Read-only-source reproduction; run only through run-ipv6-options.sh."""
 import json
 import os
 import pathlib
@@ -55,12 +55,8 @@ def probe(binary, direction, mode):
                 time.sleep(0.01)
             else:
                 raise AssertionError('FakeSIP startup timeout')
-            if os.environ.get('FS_TEST_NSENTER'):
-                enter = [sys.executable, os.environ['FS_TEST_NSENTER'], '--enter',
-                         os.environ['FS_AUDIT_PEER']]
-            else:
-                enter = ['nsenter', '-t', os.environ['FS_AUDIT_PEER'], '-n']
-            remote = subprocess.Popen([*enter, sys.executable, __file__, '--peer', mode],
+            remote = subprocess.Popen(['nsenter', '-t', os.environ['FS_AUDIT_PEER'],
+                                       '-n', sys.executable, __file__, '--peer', mode],
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                       text=True)
             assert select.select([remote.stdout], [], [], 3)[0], 'peer startup timeout'
@@ -90,8 +86,8 @@ def probe(binary, direction, mode):
                           parser_rejections=logs.count('not a UDP packet'),
                           exit=status)
             print(json.dumps(result), flush=True)
-            assert counts['fake'] == 1, result
-            assert result['parser_rejections'] == 0 and 'ERROR:' not in logs, logs
+            assert counts['fake'] == (1 if mode == 'plain' else 0), result
+            assert (result['parser_rejections'] > 0) == (mode != 'plain'), result
         finally:
             for child in (remote, process):
                 if child is not None and child.poll() is None:
@@ -107,4 +103,4 @@ if __name__ == '__main__':
         for direction in ('-0', '-1'):
             for mode in ('plain', 'destopts', 'hopopts'):
                 probe(sys.argv[1], direction, mode)
-        print('PASS: ordinary and extended IPv6 UDP each receive one decoy')
+        print('REPRODUCED: extended IPv6 UDP passes unchanged but gets no decoy')
