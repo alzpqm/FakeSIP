@@ -39,32 +39,64 @@ int fs_pkt6_parse(void *pkt_data, int pkt_len, struct sockaddr *saddr,
 {
     struct ip6_hdr *ip6h;
     struct udphdr *udph;
-    int ip6h_len;
+    size_t offset, remaining, ext_len, udp_len;
+    unsigned int next_header, extensions = 0;
+    uint8_t *bytes = pkt_data;
     struct sockaddr_in6 *saddr_in6, *daddr_in6;
 
     saddr_in6 = (struct sockaddr_in6 *) saddr;
     daddr_in6 = (struct sockaddr_in6 *) daddr;
 
-    ip6h_len = sizeof(*ip6h);
-
-    if (pkt_len < ip6h_len) {
+    if (pkt_len < (int) sizeof(*ip6h)) {
         E("ERROR: invalid packet length: %d", pkt_len);
         return -1;
     }
 
     ip6h = (struct ip6_hdr *) pkt_data;
 
-    if (ip6h->ip6_nxt != IPPROTO_UDP) {
-        E("ERROR: not a UDP packet (next header %d)", (int) ip6h->ip6_nxt);
+    remaining = ntohs(ip6h->ip6_plen);
+    offset = sizeof(*ip6h);
+    /* Jumbograms are not supported by the NFQUEUE copy/builder limits. */
+    if ((bytes[0] >> 4) != 6 || !remaining ||
+        remaining > (size_t) pkt_len - offset) {
+        E("ERROR: invalid IPv6 payload length or version");
         return -1;
     }
 
-    if ((size_t) pkt_len < ip6h_len + sizeof(*udph)) {
-        E("ERROR: invalid packet length: %d", pkt_len);
+    next_header = ip6h->ip6_nxt;
+    while (next_header != IPPROTO_UDP) {
+        /* Only options headers have the semantics needed here. In particular,
+         * do not interpret fragments, routing, AH or ESP as ordinary UDP.
+         * The caller passes unsupported packets through unchanged.
+         */
+        if ((next_header != IPPROTO_HOPOPTS &&
+             next_header != IPPROTO_DSTOPTS) ||
+            (next_header == IPPROTO_HOPOPTS && offset != sizeof(*ip6h)) ||
+            ++extensions > 16 || remaining < 2) {
+            E("ERROR: unsupported or truncated IPv6 extension header");
+            return -1;
+        }
+        ext_len = ((size_t) bytes[offset + 1] + 1) * 8;
+        if (ext_len > remaining) {
+            E("ERROR: invalid IPv6 extension length");
+            return -1;
+        }
+        next_header = bytes[offset];
+        offset += ext_len;
+        remaining -= ext_len;
+    }
+
+    if (remaining < sizeof(*udph)) {
+        E("ERROR: truncated IPv6 UDP header");
         return -1;
     }
 
-    udph = (struct udphdr *) ((uint8_t *) pkt_data + ip6h_len);
+    udph = (struct udphdr *) (bytes + offset);
+    udp_len = ntohs(udph->len);
+    if (udp_len < sizeof(*udph) || udp_len != remaining) {
+        E("ERROR: invalid IPv6 UDP length");
+        return -1;
+    }
 
     memset(saddr_in6, 0, sizeof(*saddr_in6));
     saddr_in6->sin6_family = AF_INET6;
@@ -76,7 +108,7 @@ int fs_pkt6_parse(void *pkt_data, int pkt_len, struct sockaddr *saddr,
 
     *ttl = ip6h->ip6_hlim;
     *udph_ptr = udph;
-    *udp_payload_len = pkt_len - ip6h_len - sizeof(*udph);
+    *udp_payload_len = (int) (udp_len - sizeof(*udph));
 
     return 0;
 }

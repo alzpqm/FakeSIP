@@ -38,6 +38,10 @@ build_test test_nfrules \
     "$ROOT_DIR/src/logging.c"
 
 if [ "$(uname -s)" = Linux ]; then
+    build_test test_ipv6_options \
+        "$ROOT_DIR/src/ipv6pkt.c" "$ROOT_DIR/src/globvar.c" \
+        "$ROOT_DIR/src/logging.c" -lnetfilter_queue -lnfnetlink -lmnl
+
     build_test test_packets \
         "$ROOT_DIR/src/ipv4pkt.c" "$ROOT_DIR/src/ipv6pkt.c" \
         "$ROOT_DIR/src/globvar.c" "$ROOT_DIR/src/logging.c" \
