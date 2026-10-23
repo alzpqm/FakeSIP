@@ -1,5 +1,11 @@
 # FakeSIP
 
+> Maintenance has moved to [FakeTraffic](https://github.com/alzpqm/FakeTraffic),
+> the shared source, build and management project for the TCP and UDP engines.
+> This repository retains historical source, tags and releases for provenance
+> and rollback. See the integration handoff in FakeTraffic for migration status.
+> Keep the existing engine service enabled as configured.
+
 [English](README.md) | [正體中文](README.zh-TW.md)
 
 FakeSIP uses Netfilter Queue (NFQUEUE) to send SIP-shaped decoy packets beside
