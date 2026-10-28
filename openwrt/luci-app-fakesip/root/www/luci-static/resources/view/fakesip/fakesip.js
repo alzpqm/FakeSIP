@@ -613,6 +613,11 @@ return view.extend({
 			poll.add(this.statusPoll, 5);
 			return E('div', {}, [
 				E('h2', { 'name': 'content' }, _('FakeSIP')),
+				E('div', { 'class': 'alert-message warning' }, [
+					'FakeSIP 已由 FakeTraffic 取代 / FakeSIP has been superseded by ',
+					E('a', { 'href': 'https://github.com/alzpqm/FakeTraffic', 'target': '_blank', 'rel': 'noopener noreferrer' }, 'FakeTraffic'),
+					'。請勿與新版同時處理相同流量 / Do not run both on the same traffic.'
+				]),
 				E('div', { 'class': 'cbi-map-descr' },
 					_('Disguise UDP traffic as SIP protocol traffic using Netfilter Queue.')),
 				this.renderStatusPanel(status),

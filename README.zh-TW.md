@@ -1,5 +1,10 @@
 # FakeSIP
 
+> **FakeSIP 已由 [FakeTraffic](https://github.com/alzpqm/FakeTraffic) 取代。**
+> 新專案以同一個服務和 LuCI 頁面管理 TCP 與 UDP／SIP；本封存倉庫和舊版附件僅供參考與回復。
+> 遷移前請備份設定並閱讀[遷移說明](https://github.com/alzpqm/FakeTraffic/blob/main/docs/migration.md)，
+> 避免舊服務與 FakeTraffic 同時處理相同流量。
+
 [English](README.md) | [正體中文](README.zh-TW.md)
 
 FakeSIP 透過 Netfilter Queue（NFQUEUE），在指定 UDP 流量旁送出外觀類似 SIP

@@ -1,10 +1,10 @@
 # FakeSIP
 
-> Maintenance has moved to [FakeTraffic](https://github.com/alzpqm/FakeTraffic),
-> the shared source, build and management project for the TCP and UDP engines.
-> This repository retains historical source, tags and releases for provenance
-> and rollback. See the integration handoff in FakeTraffic for migration status.
-> Keep the existing engine service enabled as configured.
+> **FakeSIP has been superseded by [FakeTraffic](https://github.com/alzpqm/FakeTraffic).**
+> FakeTraffic unifies TCP and UDP/SIP configuration in one service and LuCI page.
+> This archived repository and its releases are retained for reference and rollback.
+> For migration, back up your configuration and follow the [migration guide](https://github.com/alzpqm/FakeTraffic/blob/main/docs/migration.md).
+> Do not run the legacy service alongside FakeTraffic on the same traffic.
 
 [English](README.md) | [正體中文](README.zh-TW.md)
 
